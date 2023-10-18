@@ -1,0 +1,546 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Securing Access to External Package Repositories Using AWS CodeSuite Automation"
+Metadata:
+  LICENSE: >-
+    Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this
+    software and associated documentation files (the "Software"), to deal in the Software
+    without restriction, including without limitation the rights to use, copy, modify,
+    merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+    PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: AWS Resource Configuration
+        Parameters:
+          - ArtifactStoreBucket
+          - CodePipelineName
+          - SNSEmail
+      - Label:
+          default: Git Repository Settings
+        Parameters:
+          - PrivateGitHubBranch
+          - PrivateGitHubOwner
+          - PrivateGitHubRepo
+          - PrivateGitHubToken
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - CodeBuildLambdaVpc
+          - CodeBuildLambdaSubnet
+    ParameterLabels:
+      ArtifactStoreBucket:
+        default: S3 Bucket Containing Lambda Handler, Lambda Data Loader, and Lex Deployment Packages, along with Customer FAQ and Mortgage Application example documents.
+      CodePipelineName:
+        default: CodePipeline Name
+      SNSEmail:
+        default: SNS Email
+      PrivateGitHubBranch:
+        default: Private GitHub Branch
+      PrivateGitHubOwner:
+        default: GitHub Repo Owner
+      PrivateGitHubRepo:
+        default: GitHub Repo Name
+      PrivateGitHubToken:
+        default: GitHub PAT Secrets Manager ARN
+      CodeBuildLambdaVpc:
+        default: VPC-Attached CodeBuild and Lambda VPC
+      CodeBuildLambdaSubnet:
+        default: VPC-Attached CodeBuild and Lambda Subnets
+
+Parameters:
+  ArtifactStoreBucket:
+    Description: S3 Bucket Containing Lambda Handler, Lambda Data Loader, and Lex Deployment Packages, along with Customer FAQ and Mortgage Application example documents.
+    Type: String
+    Default: <YOUR-S3-BUCKET-NAME>
+  CodePipelineName:
+    Description: Name for CodePipeline.
+    Type: String
+    Default: <YOUR-EXTERNAL-PACKAGE-REPO-PIPELINE-NAME>
+  SNSEmail:
+    Description: SNS Email.
+    Type: String
+    Default: <YOUR-SNS-EMAIL>
+  PrivateGitHubBranch:
+    Description: Private GitHub Branch for request file.
+    Type: String
+    Default: <YOUR-EXTERNAL-PACKAGE-BRANCH>
+  PrivateGitHubOwner:
+    Description: Private GitHub Owner. 
+    Type: String
+    Default: <YOUR-EXTERNAL-PACKAGE-OWNER>
+  PrivateGitHubRepo:
+    Description: Private GitHub Repository Name. 
+    Type: String
+    Default: <YOUR-EXTERNAL-PACKAGE-REPO>
+  PrivateGitHubToken:
+    Description: GitHub PAT. 
+    Type: String
+    NoEcho: true
+    Default: <YOUR-GITHUB-PAT-SECRET-NAME>
+  CodeBuildLambdaVpc:
+    Description: VPC for CodeBuild deployment.
+    Type: 'AWS::EC2::VPC::Id'
+    Default: <YOUR-VPC-ID>
+  CodeBuildLambdaSubnet:
+    Description: Private subnet(s) for CodeBuild deployment.
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: '<YOUR-PRIVATE-SUBNET-ID1>, <YOUR-PRIVATE-SUBNET-ID2>'
+
+Resources:
+  #
+  SNSTopic:
+    Type: AWS::SNS::Topic
+
+  #
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties: 
+      Endpoint: !Ref SNSEmail
+      Protocol: email
+      TopicArn: !Ref SNSTopic
+
+  # Create Domain
+  ExampleDomain:
+    Type: AWS::CodeArtifact::Domain
+    Properties:
+      DomainName: !Sub ${AWS::StackName}-domain
+      PermissionsPolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 
+              - !Sub arn:aws:iam::${AWS::AccountId}:root
+            Resource: "*"
+            Action:
+              - codeartifact:CreateRepository
+              - codeartifact:DescribeDomain
+              - codeartifact:GetAuthorizationToken
+              - codeartifact:GetDomainPermissionsPolicy
+              - codeartifact:ListRepositoriesInDomain
+
+  # Create External Repository
+  ExternalRepository:
+    Type: AWS::CodeArtifact::Repository
+    Properties:
+      DomainName: !GetAtt ExampleDomain.Name
+      RepositoryName: !Sub ${AWS::StackName}-externalrepository
+      ExternalConnections:
+        - public:npmjs
+      PermissionsPolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 
+              - !Sub arn:aws:iam::${AWS::AccountId}:root
+            Resource: "*"
+            Action:
+              - codeartifact:DescribePackageVersion
+              - codeartifact:DescribeRepository
+              - codeartifact:GetPackageVersionReadme
+              - codeartifact:GetRepositoryEndpoint
+              - codeartifact:ListPackageVersionAssets
+              - codeartifact:ListPackageVersionDependencies
+              - codeartifact:ListPackageVersions
+              - codeartifact:ListPackages
+              - codeartifact:PublishPackageVersion
+              - codeartifact:PutPackageMetadata
+              - codeartifact:ReadFromRepository
+
+  # Create Repository
+  InternalRepository:
+    Type: AWS::CodeArtifact::Repository
+    Properties:
+      DomainName: !GetAtt ExampleDomain.Name
+      RepositoryName: !Sub ${AWS::StackName}-internalrepository
+      Upstreams:
+        - !GetAtt ExternalRepository.Name
+      PermissionsPolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 
+              - !Sub arn:aws:iam::${AWS::AccountId}:root
+            Resource: "*"
+            Action:
+              - codeartifact:DescribePackageVersion
+              - codeartifact:DescribeRepository
+              - codeartifact:GetPackageVersionReadme
+              - codeartifact:GetRepositoryEndpoint
+              - codeartifact:ListPackageVersionAssets
+              - codeartifact:ListPackageVersionDependencies
+              - codeartifact:ListPackageVersions
+              - codeartifact:ListPackages
+              - codeartifact:PublishPackageVersion
+              - codeartifact:PutPackageMetadata
+              - codeartifact:ReadFromRepository
+  
+  # Build Stage
+  DownloadRepoCodeBuild:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        VpcConfig:
+          VpcId: !Ref CodeBuildLambdaVpc
+          SecurityGroupIds: [!Ref CodeBuildSecurityGroup]
+          Subnets: !Ref CodeBuildLambdaSubnet
+        EncryptionKey: !GetAtt KMSKey.Arn
+        Environment:
+          Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+          Type: LINUX_CONTAINER
+          ComputeType: BUILD_GENERAL1_SMALL
+        QueuedTimeoutInMinutes: 60
+        ServiceRole: !GetAtt CodeSuiteRole.Arn
+        Source:
+          BuildSpec: |
+            version: 0.2
+            phases:
+              build:
+                commands:
+                  - echo "=======================Start-Deployment============================="
+                  - echo "Cloning compressed external package repository"
+                  - IFS=$' \t\r\n'
+                  - ls -al
+                  - tail -1 public-package-request.csv > list.txt
+                  - export EXTERNAL_PACKAGE_NAME=$(cut -d "," -f 1 list.txt)
+                  - echo $EXTERNAL_PACKAGE_NAME
+                  - export EXTERNAL_PACKAGE_URL=$(cut -d "," -f 2 list.txt)
+                  - echo $EXTERNAL_PACKAGE_URL
+                  - curl $EXTERNAL_PACKAGE_URL -L -o $EXTERNAL_PACKAGE_NAME.zip
+                  - ls -al
+                  - echo "=======================End-Deployment============================="
+            artifacts:
+              files:
+                - codeguru-security-scan.py
+                - public-package-request.csv
+                - $EXTERNAL_PACKAGE_NAME.zip
+          Type: CODEPIPELINE
+        TimeoutInMinutes: 30
+
+  # Security Scan and Notify Stage
+  SecurityScanCodeBuild:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        VpcConfig:
+          VpcId: !Ref CodeBuildLambdaVpc
+          SecurityGroupIds: [!Ref CodeBuildSecurityGroup]
+          Subnets: !Ref CodeBuildLambdaSubnet
+        EncryptionKey: !GetAtt KMSKey.Arn
+        Environment:
+          Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+          Type: LINUX_CONTAINER
+          ComputeType: BUILD_GENERAL1_SMALL
+        QueuedTimeoutInMinutes: 60
+        ServiceRole: !GetAtt CodeSuiteRole.Arn
+        Source:
+          BuildSpec: |
+            version: 0.2
+            phases:
+              install:
+                  runtime-versions:
+                      python: 3.9
+              pre_build:
+                  commands:
+                    - pip3 install awscli --upgrade --user
+                    - pip3 install boto3 --upgrade
+              build:
+                commands:
+                  - echo "=======================Start-Deployment============================="
+                  - echo "Amazon CodeGuru Security scanning external package repository"
+                  - ls -al
+                  - export EXTERNAL_PACKAGE_FILE_NAME=$(find . -type f -name "*.zip" -printf "%f\n")
+                  - echo $EXTERNAL_PACKAGE_FILE_NAME
+                  - export EXTERNAL_PACKAGE_NAME=${EXTERNAL_PACKAGE_FILE_NAME%.*}
+                  - echo $EXTERNAL_PACKAGE_NAME
+                  - export UNIQUE_PACKAGE_FILE_NAME=$EXTERNAL_PACKAGE_NAME-$CODEBUILD_START_TIME.zip
+                  - cp $EXTERNAL_PACKAGE_FILE_NAME $UNIQUE_PACKAGE_FILE_NAME
+                  - echo $UNIQUE_PACKAGE_FILE_NAME
+                  - export ASSET_SHA256=$(sha256sum $EXTERNAL_PACKAGE_FILE_NAME | awk '{print $1;}')
+                  - echo $ASSET_SHA256
+                  - python3 codeguru-security-scan.py
+                  - echo "=======================End-Deployment============================="
+            artifacts:
+              files:
+                - $EXTERNAL_PACKAGE_FILE_NAME
+          Type: CODEPIPELINE
+        TimeoutInMinutes: 30
+
+  # CodePipeline to Orchestrate External Package Repo InfoSec Validation Workflow
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref CodePipelineName
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactStoreBucket
+        EncryptionKey:
+          Id: !GetAtt KMSKey.Arn
+          Type: KMS
+      RestartExecutionOnUpdate: true
+      RoleArn: !GetAtt CodeSuiteRole.Arn
+      Stages:
+      # Source Action for Internal Private GitHub Repo
+      - Name: 'Pull_Internal_Repository'
+        Actions:
+        - Name: 'Source'
+          InputArtifacts: []
+          ActionTypeId:
+            Category: Source
+            Owner: ThirdParty
+            Version: 1
+            Provider: GitHub
+          OutputArtifacts:
+          - Name: RepoToDownload
+          Configuration:
+            Owner: !Ref PrivateGitHubOwner
+            Repo: !Ref PrivateGitHubRepo
+            Branch: !Ref PrivateGitHubBranch
+            PollForSourceChanges: false
+            OAuthToken: !Sub "{{resolve:secretsmanager:${PrivateGitHubToken}}}"
+          RunOrder: 1
+      # CodeBuild Project to Download External Repo Based on request CSV
+      - Name: 'Download_External_Repository'
+        Actions:
+        - Name: 'Download_ZIP'
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: 1
+            Provider: CodeBuild
+          InputArtifacts:
+            - Name: RepoToDownload
+          OutputArtifacts:
+            - Name: DownloadedRepo
+          Configuration:
+            ProjectName: !Ref DownloadRepoCodeBuild      
+          RunOrder: 1
+     # CodeBuild Project to Perform CodeGuru Security Scans
+      - Name: 'Security_Scan_Notify'
+        Actions:
+        - Name: 'CodeGuru_Security'
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: 1
+            Provider: CodeBuild
+          InputArtifacts:
+            - Name: DownloadedRepo
+          OutputArtifacts:
+            - Name: SecurityScan
+          Configuration:
+            ProjectName: !Ref SecurityScanCodeBuild
+            EnvironmentVariables: !Sub |
+              [{
+                "name": "ExampleDomain",
+                "type": "PLAINTEXT",
+                "value": "${ExampleDomain.Name}"
+              },{
+                "name": "InternalRepository",
+                "type": "PLAINTEXT",
+                "value": "${InternalRepository.Name}"
+              },{
+                "name": "SNSTopic",
+                "type": "PLAINTEXT",
+                "value": "${SNSTopic}"
+              }]
+          RunOrder: 1
+
+  # GitHub Webhook to filter and push updates
+  GithubWebhook:
+    Type: 'AWS::CodePipeline::Webhook'
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: !Sub "{{resolve:secretsmanager:${PrivateGitHubToken}}}"
+      RegisterWithThirdParty: 'true'
+      Filters:
+      - JsonPath: "$.ref"
+        MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref CodePipeline
+      TargetAction: Source
+      TargetPipelineVersion: !GetAtt CodePipeline.Version
+
+  # KMS Key to Encrypt CodePipeline Artifacts
+  KMSKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: 'git CodePipeline integration, bucket to store ssh keys'
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow access for Key Administrators
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Join
+                  - ''
+                  - - 'arn:aws:iam::'
+                    - !Ref 'AWS::AccountId'
+                    - ':root'
+            Action:
+              - 'kms:Create*'
+              - 'kms:Describe*'
+              - 'kms:Enable*'
+              - 'kms:List*'
+              - 'kms:Put*'
+              - 'kms:Update*'
+              - 'kms:Revoke*'
+              - 'kms:Disable*'
+              - 'kms:Get*'
+              - 'kms:Delete*'
+              - 'kms:ScheduleKeyDeletion'
+              - 'kms:CancelKeyDeletion'
+            Resource: '*'
+          - Sid: Allow use of the key
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt CodeSuiteRole.Arn
+            Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:ReEncrypt*'
+              - 'kms:GenerateDataKey*'
+              - 'kms:DescribeKey'
+            Resource: '*'
+
+  # IAM Role for CodeSuite (CodePipeline + CodeBuild)
+  CodeSuiteRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: "Allow"
+            Principal:
+                Service: 
+                 - 'codebuild.amazonaws.com'
+                 - 'codepipeline.amazonaws.com'
+            Action:
+                - "sts:AssumeRole"
+        Path: "/"
+        ManagedPolicyArns:
+          - !Ref CodeSuiteEndpointPolicy
+
+  # IAM Policy for CodeSuite Inter-Service Actions
+  CodeSuitePolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+        Description: Policy with base permissions for CodeBuild
+        Path: /
+        Roles:
+          - !Ref CodeSuiteRole
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: "Allow"
+            Action:
+                - "logs:CreateLogGroup"
+                - "logs:PutLogEvents"
+                - "logs:CreateLogStream"
+            Resource:
+                - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+          - Effect: Allow
+            Action: 
+                - "s3:List*"
+                - "s3:Put*"
+                - "s3:Get*"
+                - "s3:DeleteObject"
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactStoreBucket}
+              - !Sub arn:aws:s3:::${ArtifactStoreBucket}/*
+          - Effect: Allow
+            Action: 
+                - "codeartifact:*"
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'iam:PassRole'
+            Resource: 
+              - !GetAtt CodeSuiteRole.Arn
+          - Effect: Allow
+            Action:
+             - "codebuild:*"
+             - "codeguru-security:*"
+             - "codepipeline:*"
+             - "codeartifact:*"
+            Resource: '*'
+          - Effect: Allow
+            Action:
+             - 'kms:*'
+             - 'kms:Decrypt'
+             - 'kms:ReEncrypt*'
+             - 'kms:GenerateDataKey*'
+             - 'kms:DescribeKey'
+            Resource: "*"
+          - Effect: Allow
+            Action:
+             - "sns:publish"
+            Resource: !Ref SNSTopic
+          - Effect: Allow
+            Action:
+             - 'secretsmanager:GetSecretValue'
+            Resource: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+
+  # IAM Policy for CodeSuite VPC Endpoints
+  CodeSuiteEndpointPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+        Description: Policy with permissions for codebuild to work with endpoints
+        Path: /
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DescribeDhcpOptions'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DescribeSubnets'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'ec2:DescribeVpcs'
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                  - 'ec2:CreateNetworkInterfacePermission'
+              Resource: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*'
+              Condition:
+                StringEquals: {"ec2:Subnet": [{
+                      "Fn::Join": ["", ["arn:aws:ec2:", {"Ref" : "AWS::Region" },":", {"Ref" : "AWS::AccountId"}, ":subnet/", { "Fn::Select" : [ "0", {"Ref": "CodeBuildLambdaSubnet"} ] }
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": ["", ["arn:aws:ec2:", {"Ref" : "AWS::Region" },":", {"Ref" : "AWS::AccountId"}, ":subnet/", { "Fn::Select" : [ "1", {"Ref": "CodeBuildLambdaSubnet"} ] }
+                        ]
+                      ]
+                    }],
+                  "ec2:AuthorizedService": "codebuild.amazonaws.com"}
+
+  # CodeBuild Build Project Security Group
+  CodeBuildSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security group for the lambda function performing git pulls.'
+      SecurityGroupEgress:
+        - CidrIp: '0.0.0.0/0'
+          IpProtocol: 'tcp'
+          FromPort: '0'
+          ToPort: '65535'
+      VpcId: !Ref CodeBuildLambdaVpc
