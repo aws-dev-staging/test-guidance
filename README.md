@@ -169,14 +169,7 @@ Please note that the actual cost will depend on factors such as the frequency of
 You must also have [AWS CLI](https://aws.amazon.com/cli/) installed. For instructions on installing AWS CLI, please see [Installing, updating, and uninstalling the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
 
 ### Multi-Account Configuration
-The following diagram highlights a multi-account structure where functional teams are isolated by the security, access, and billing boundaries of their AWS account:
-
-<p align="center">
-  <img src="assets/images/multi-account-overview.svg">
-  <em>Diagram 3: Multi-Account Configuration Overview</em>
-</p>
-
-This is a proposed multi-account structure that can be adapted for your specific requirements, organizational and governance structure, and project methodology.
+The preceding diagram in Figure 1 highlights a multi-account structure where functional teams are isolated by the security, access, and billing boundaries of their AWS account. This is a proposed multi-account structure that can be adapted for your specific requirements, organizational and governance structure, and project methodology.
 
 The AWS Whitepaper for [Building a Secure Enterprise Machine Learning Platform](https://docs.aws.amazon.com/whitepapers/latest/build-secure-enterprise-ml-platform/aws-accounts.html) recommends production data science environments use multiple AWS accounts for the following benefits:
 - Group workloads based on business purpose and ownership
@@ -222,7 +215,7 @@ The below workflow diagram visualizes the end-to-end deployment process that is 
 
 <p align="center">
   <img src="assets/images/deployment-workflow.svg">
-  <em>Diagram 1: Solution Deployment Workflow</em>
+  <em>Figure 5: Solution Deployment Workflow</em>
 </p>
 
 ### Fork and Clone [Guidance for Secure Access to External Package Repositories on AWS](https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws.git)
@@ -254,7 +247,7 @@ Your private internal repository is the source code repository that contains [pu
   
 <p align="center">
   <img src="assets/images/github-repo-config.svg">
-  <em>Figure 1: Private Repository Configuration</em>
+  <em>Figure 6: Private Repository Configuration</em>
 </p>
 
 ❗ If you are also using GitHub as your private internal package repository, the CloudFormation template, [external-repo-github.yaml](cfn/external-repo-github.yaml), is used for deploying the solution and requires the private internal GitHub repository URL as an additional parameter.
@@ -366,7 +359,7 @@ SageMaker Studio Notebooks allow direct Internet access by default, however, thi
   <img src="assets/images/sagemaker-studio-vpc-only.svg">
 </p>
 <p align="center">
-  <em>Diagram 1: SageMaker Studio Private Networking Architecture</em>
+  <em>Figure 7: SageMaker Studio Private Networking Architecture</em>
 </p>
 
 Once Studio is deployed, navigate to the [SageMaker console](https://console.aws.amazon.com/sagemaker/home?#/dashboard), select **Studio** from the menu on the left, select your **user profile** from the dropdown, then select **Open Studio**. This will launch your Jupyter Lab environment.
@@ -375,7 +368,7 @@ Once Studio is deployed, navigate to the [SageMaker console](https://console.aws
   <img src="assets/images/studio-console.png" width="70%" height="70%">
 </p>
 <p align="center">
-  <em>Figure 1: SageMaker Studio Console</em>
+  <em>Figure 8: SageMaker Studio Console</em>
 </p>
 
 ### Push Updated External Package Repository Request File to Private Repository
@@ -388,7 +381,7 @@ In the SageMaker Studio IDE, open your system terminal:
   <img src="assets/images/studio-terminal.png">
 </p>
 <p align="center">
-  <em>Figure 2: SageMaker Studio JupyterLab Terminal</em>
+  <em>Figure 9: SageMaker Studio JupyterLab Terminal</em>
 </p>
 
 Run the following commands in the terminal to clone your private GitHub repository then update and push your public repository request CSV file:
@@ -419,7 +412,7 @@ CodePipeline is configured with a source action that triggers based on the data 
   <img src="assets/images/pipeline-execution.png" width="360" height="875">
 </p>
 <p align="center">
-  <em>Figure 3: CodePipeline Execution Status</em>
+  <em>Figure 10: CodePipeline Execution Status</em>
 </p>
 
 CodeGuru Security performs security and quality scans on the public package repository to detect vulnerabilities and return findings. The findings include information about security issues in the public package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
@@ -428,7 +421,7 @@ The CodeGuru Security Dashboard provides metrics to track the security posture o
 
 <p align="center">
   <img src="assets/images/codeguru-security-scan-xgboost.svg">
-  <em>Figure 4: Amazon CodeGuru Security - Security and Quality Scan Findings</em>
+  <em>Figure 11: Amazon CodeGuru Security - Security and Quality Scan Findings</em>
 </p>
 
 ---
@@ -439,14 +432,14 @@ If the security scans return lower than medium severities, CodeBuild updates the
 
 <p align="center">
   <img src="assets/images/codepipeline-overview.svg">
-  <em>Diagram 2: AWS CodePipeline Private Package Publishing Workflow</em>
+  <em>Figure 12: AWS CodePipeline Private Package Publishing Workflow</em>
 </p>
 
 You can view the packages published to the CodeArtifact private internal package repository by navigating to the [AWS CodeArtifact Console](https://us-east-1.console.aws.amazon.com/codesuite/codeartifact/start?region=us-east-1):
 
 <p align="center">
   <img src="assets/images/codeartifact-package.png">
-  <em>Figure 5: AWS CodeArtifact Console</em>
+  <em>Figure 13: AWS CodeArtifact Console</em>
 </p>
 
 Then download the CodeArtifact private internal package version asset using the [_aws codeartifact get-package-version-asset_ CLI command](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/codeartifact/get-package-version-asset.html).
@@ -455,7 +448,7 @@ Then download the CodeArtifact private internal package version asset using the 
   <img src="assets/images/studio-package-download.png">
 </p>
 <p align="center">
-  <em> Figure 6: AWS CodeArtifact Private Package Version Asset Download</em>
+  <em> Figure 14: AWS CodeArtifact Private Package Version Asset Download</em>
 </p>
 
 ### Use InfoSec Approved Private Package Repository with SageMaker Studio Notebook
