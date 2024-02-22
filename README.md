@@ -12,11 +12,11 @@
     - [Multi-Account Configuration](#multi-account-configuration)
     - [Required Permissions](#required-permissions)
     - [Run Security Scan on the CloudFormation Template](#run-security-scan-on-the-cloudFormation-template)
-3. [Deployment Steps](#deployment-steps-required)
-4. [Deployment Validation](#deployment-validation-required)
-5. [Running the Guidance](#running-the-guidance-required)
-6. [Next Steps](#next-steps-required)
-7. [Cleanup](#cleanup-required)
+3. [Deployment Steps](#deployment-steps)
+4. [Deployment Validation](#deployment-validation)
+5. [Running the Guidance](#running-the-guidance)
+6. [Next Steps](#next-steps)
+7. [Cleanup](#cleanup)
 
 ## Overview
 
@@ -211,8 +211,8 @@ brew gem install cfn-nag
 
 To initiate the security scan, run the following command:
 ```sh
-git clone https://github.com/aws-samples/aws-external-package-security.git
-cd ../cfn/
+git clone https://github.com/aws-samples/guidance-for-secure-access-to-external-package-repositories-on-aws.git
+cd guidance-for-secure-access-to-external-package-repositories-on-aws/cfn/
 cfn_nag_scan --input-path ./external-repo-codeartifact.yaml
 ```
 
@@ -225,7 +225,7 @@ The below workflow diagram visualizes the end-to-end deployment process that is 
   <em>Diagram 1: Solution Deployment Workflow</em>
 </p>
 
-### Fork and Clone [Guidance for Secure Access to External Package Repositories on AWS](https://github.com/aws-solutions-library-samples/aws-external-package-security.git)
+### Fork and Clone [Guidance for Secure Access to External Package Repositories on AWS](https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws.git)
 Follow [GitHub's instructions](https://docs.github.com/en/get-started/quickstart/fork-a-repo?tool=webui&platform=mac) to fork this repository. This creates a copy of the repository that is disconnected from the original codebase, so you can make the appropriate modifications.
 
 Take note of your forked repository URL and use it to clone the repository:
@@ -298,7 +298,7 @@ export PRIVATE_GITHUB_URL=<YOUR-PRIVATE-PACKAGE-REPOSITORY-URL>
 ```
 
 ```sh
-# cd aws-external-package-security/shell/
+# cd guidance-for-secure-access-to-external-package-repositories-on-aws/shell/
 # chmod u+x create-codeartifact-stack.sh
 
 source ./create-codeartifact-stack.sh
@@ -496,7 +496,7 @@ The shell command executes the following AWS CLI commands to delete the solution
 #### Clean Up Automation Script
 
 ```sh
-# cd aws-external-package-security/shell/
+# cd guidance-for-secure-access-to-external-package-repositories-on-aws/shell/
 # chmod u+x delete-codeartifact-stack.sh
 # ./delete-codeartifact-stack.sh
 
