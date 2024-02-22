@@ -237,7 +237,7 @@ Your VPC ID and two private subnet IDs will be specified as CloudFormation param
 ### Create Personal Access Token (PAT)
 To authenticate with your private GitHub repository, you will use a GitHub PAT. You may prefer to use a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/creating-github-apps/about-apps) to access resources on behalf of an organization or for long-lived integrations. To create your PAT, please follow the GitHub instructions for [creating a personal access token (classic)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic). Take note of your PAT before closing your browser as you will use it for AWS Secrets Manager configuration below.
 
-The [Deployment Automation Script](shell/create-codeartifact-stack.sh) will publish your PAT to AWS Secrets Manager using AWS CLI commands and the secret name will be used as the _PrivateGitHubToken_ CloudFormation parameter.
+The [Deployment Automation Script](shell/create-codeartifact-stack.sh), which you will use in the following Deploy AWS CloudFormation Stack section, will publish your PAT to AWS Secrets Manager using AWS CLI commands and the secret name will be used as the _PrivateGitHubToken_ CloudFormation parameter.
 
 ### Gather Private Internal Repository Configuration
 Your private internal repository is the source code repository that contains [public-package-request.csv](public-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py). This repository's webhook is used as the CodePipeline source action that triggers with each new _git push_. Please navigate to your private internal repository and note the following:
