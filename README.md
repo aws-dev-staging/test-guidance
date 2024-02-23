@@ -306,7 +306,7 @@ The above ```source ./create-codeartifact-stack.sh``` shell command executes the
 ```sh
 export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-token-3 --secret-string $PRIVATE_GITHUB_PAT --query Name --output text)
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}
+export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-codeartifact
 
 aws s3 mb s3://${S3_ARTIFACT_BUCKET_NAME} --region us-east-1
 
@@ -388,21 +388,21 @@ Run the following commands in the terminal to clone your private GitHub reposito
 
 ```sh
 git init
-git config --global user.email "email@example.com"
-git config --global user.name "username"
+git config --global user.email <YOUR-GITHUB-EMAIL>
+git config --global user.name <YOUR-GITHUB-USERNAME>
 # If not already forked, fork the remote repository (https://github.com/aws-samples/sagemaker-external-repository-security.git)
 git remote add origin <YOUR-FORKED-REPOSITORY-URL> 
 git clone <YOUR-FORKED-REPOSITORY-URL> 
 cd <local-repo-name>
 git checkout <branch>
 vi <public-package-request.csv>
-# Append your public package name and zip URL to public-repo-request-file.csv # ex: numpy,https://github.com/numpy/numpy/archive/refs/heads/main.zip
+# Append your public package name and zip URL to public-repo-request-file.csv # ex: scikit-learn,https://github.com/scikit-learn/scikit-learn/archive/refs/heads/main.zip
 git add <public-package-request.csv>
-git commit -m "Update public-package-request.csv with <PACKAGE-NAME>"
+git commit -m "Add <PACKAGE-NAME>"
 git push -u
 ```
 
-❗ If required, provide a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) when prompted for your password following the _git push -u_ command.
+❗ You will be required to provide your [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) when prompted for your password following the _git push -u_ command.
 
 ## CodePipeline Clones External Repository and Performs Security Scans
 
