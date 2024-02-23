@@ -20,7 +20,7 @@
 
 ## Overview
 
-This solution demonstrates the deployment of AWS Code Services (for example, [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html), [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html),  [Amazon CodeGuru Security](https://docs.aws.amazon.com/codeguru/latest/security-ug/what-is-codeguru-security.html), [AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html)) to streamline the process for data scientists to access external package repositories while ensuring Information Security (InfoSec) compliance. Through an automated orchestration pipeline, public packages undergo comprehensive security scans such as static application security testing, software composition analysis, dynamic code analysis, and image vulnerability scanning. Once approved by InfoSec, data scientists gain access to these packages within their private Jupyter Notebook environments (for example, [Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html)). Importantly, InfoSec governance controls are seamlessly integrated to maintain a smooth data science workflow experience without disruptions. The solution can also be extended to accommodate general developer workflows, wherein developers utilize external package dependencies.
+This solution demonstrates the deployment of AWS Code Services (for example, [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html), [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html),  [Amazon CodeGuru Security](https://docs.aws.amazon.com/codeguru/latest/security-ug/what-is-codeguru-security.html), [AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html)) to streamline the process for data scientists to access external package repositories while ensuring Information Security (InfoSec) compliance. Through an automated orchestration pipeline, external packages undergo comprehensive security scans such as static application security testing, software composition analysis, dynamic code analysis, and image vulnerability scanning. Once approved by InfoSec, data scientists gain access to these packages within their private Jupyter Notebook environments (for example, [Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html)). Importantly, InfoSec governance controls are seamlessly integrated to maintain a smooth data science workflow experience without disruptions. The solution can also be extended to accommodate general developer workflows, wherein developers utilize external package dependencies.
 
 This solution addresses three primary topics:
 1. Self-service workflow for data scientist to utilize external package dependencies.
@@ -38,17 +38,17 @@ This solution addresses three primary topics:
 </p>
 
 **1 – Data Scientist Self-Service Model**  
-The data scientist pulls the current version of the [public-package-request.csv](public-package-request.csv) file from the private GitHub repository, appends desired additional public package repositories to the request record, then pushes the updated request file back to the private repository.
+The data scientist pulls the current version of the [external-package-request.csv](external-package-request.csv) file from the private internal GitHub repository, appends desired additional external package repositories to the request record, then pushes the updated request file back to the private repository.
 
 <p align="center">
   <img src="assets/images/package-request-file.png">
 </p>
 <p align="center">
-  <em>Figure 2: Public Package Repository Request CSV File</em>
+  <em>Figure 2: External Package Request File</em>
 </p>
 
 **2, 3 – External Package Repository Ingest**  
-The CodePipeline _Pull_Internal_Repository_ source action executes based on the request file check-in to the private GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a personal access token stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the public-package-request.csv file, identifies the public package repository to ingest, then _curls_ the remote repository zip URL. The remote public package repository is stored as a build stage output artifact in [Amazon Simple Storage Service (S3)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) and later used as the security test stage input artifact.
+The CodePipeline _Pull_Internal_Repository_ source action executes based on the external package request file check-in to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a personal access token stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the external-package-request.csv file, identifies the external package repository to ingest, then _curls_ the remote repository zip URL. The remote external package repository is stored as a build stage output artifact in [Amazon Simple Storage Service (S3)](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) and later used as the security test stage input artifact.
 
 **4 – Infrastructure Security**  
 Centralized Internet egress occurs through a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) (NGW) attached to the egress [Virtual Private Cloud](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/vpc-tkv.html) (VPC) in the Customer Networking Account, reducing the cost associated with a distributed model where NGWs are deployed in every spoke VPC. [The Elastic IP](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) (EIP) of the NGW provides customers with a single IP address that they can include in their allow-list for ingress into other external networks.
@@ -56,7 +56,7 @@ Centralized Internet egress occurs through a [NAT Gateway](https://docs.aws.amaz
 **5 – Automated Security Scanning**  
 A CodeBuild project executes [CodeGuru Security security and quality scans](https://docs.aws.amazon.com/codeguru/latest/security-ug/how-codeguru-security-works.html) in the _Security_Scan_Notify_ security test stage. CodeGuru Security scanning and finding severity analysis logic is implemented in the [codeguru-security-scan.py](codeguru-security-scan.py) Python script, which is executed during the _Security_Scan_Notify_ security test stage.
 
-**6, 7 – Security Results and Private Package Repository Management**  
+**6, 7 – Security Results and Private Internal Package Repository Management**  
 If the security scans return lower than medium severities, the _Security_Scan_Notify_ stage publishes a new _Latest_ package version to the private internal CodeArtifact package repository that was created during the initial solution deployment. If any of the finding severities are greater than or equal to medium, then no private package version is published to CodeArtifact. In either case, an [Amazon Simple Notification Service](https://docs.aws.amazon.com/sns/latest/dg/welcome.html) (SNS) topic is used to email the results, positive or negative, to the requesting data scientist.
 
 <p align="center">
@@ -82,7 +82,7 @@ aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
 --package <YOUR-PACKAGE-NAME> --package-version Latest --asset <YOUR-UNIQUE-PACKAGE-VERSION-ASSET>.zip <YOUR-LOCAL-FILE-NAME>.zip 
 ```
 
-❗This solution also supports a private internal GitHub repository as the target private package repository for customers already using GitHub. Data scientists' notebooks will follow the same pattern of installing InfoSec validated external packages using the private repository endpoint (for example, _pip install git+https://github.com/customer-org/new-repo.git)_. You can view the GitHub solution architecture at [assets/images/github-overview.svg](assets/images/github-overview.svg).
+❗This solution also supports a private internal GitHub repository as the target private internal package repository for customers already using GitHub. Data scientists' notebooks will follow the same pattern of installing InfoSec validated external packages using the private internal repository endpoint (for example, _pip install git+https://github.com/customer-org/new-repo.git)_. You can view the GitHub solution architecture at [assets/images/github-overview.svg](assets/images/github-overview.svg).
 
 ### Cost
 
@@ -211,7 +211,7 @@ cfn_nag_scan --input-path ./external-repo-codeartifact.yaml
 
 ## Deployment Steps
 
-The below workflow diagram visualizes the end-to-end deployment process that is detailed within this guide. The resultant architecture includes an AWS CodePipeline workflow orchestration that triggers based on a token-authenticated webhook with the private GitHub repository containing the public package repository request file. The workflow consists of an AWS CodeBuild project to clone remote external package repositories so that an additional CodeBuild project can be used to execute Amazon CodeGuru Security security and quality scans, then publish InfoSec-approved packages to a private internal AWS CodeArtifact (or GitHub) package repository before notifying the requesting data scientist.
+The below workflow diagram visualizes the end-to-end deployment process that is detailed within this guide. The resultant architecture includes an AWS CodePipeline workflow orchestration that triggers based on a token-authenticated webhook with the private internal GitHub repository containing the external package request file. The workflow consists of an AWS CodeBuild project to clone remote external package repositories so that an additional CodeBuild project can be used to execute Amazon CodeGuru Security security and quality scans, then publish InfoSec-approved packages to a private internal AWS CodeArtifact (or GitHub) package repository before notifying the requesting data scientist.
 
 <p align="center">
   <img src="assets/images/deployment-workflow.svg">
@@ -234,20 +234,20 @@ If your environment does not have the required VPC, subnets, NAT Gateway, and In
 
 Your VPC ID and two private subnet IDs will be specified as CloudFormation parameters later in the [Deploy AWS CloudFormation Stack](#deploy-aws-cloudFormation-stack) section.
 
-### Create Personal Access Token (PAT)
+### Create GitHub Personal Access Token (PAT)
 To authenticate with your private GitHub repository, you will use a GitHub PAT. You may prefer to use a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/creating-github-apps/about-apps) to access resources on behalf of an organization or for long-lived integrations. To create your PAT, please follow the GitHub instructions for [creating a personal access token (classic)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic). Take note of your PAT before closing your browser as you will use it for AWS Secrets Manager configuration below.
 
-The [Deployment Automation Script](shell/create-codeartifact-stack.sh), which you will use in the following Deploy AWS CloudFormation Stack section, will publish your PAT to AWS Secrets Manager using AWS CLI commands and the secret name will be used as the _PrivateGitHubToken_ CloudFormation parameter.
+The [Deployment Automation Script](shell/create-codeartifact-stack.sh), which will be used in the following Deploy AWS CloudFormation Stack section, will publish your PAT to AWS Secrets Manager using AWS CLI commands and the secret name will be used as the _PrivateGitHubToken_ CloudFormation parameter.
 
 ### Gather Private Internal Repository Configuration
-Your private internal repository is the source code repository that contains [public-package-request.csv](public-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py). This repository's webhook is used as the CodePipeline source action that triggers with each new _git push_. Please navigate to your private internal repository and note the following:
+Your private internal repository is the source code repository that contains [external-package-request.csv](external-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py). This repository's webhook is used as the CodePipeline source action that triggers with each new _git push_. Please navigate to your private internal repository and note the following:
 - Branch.
 - Owner.
 - Name.
   
 <p align="center">
   <img src="assets/images/github-repo-config.svg">
-  <em>Figure 6: Private Repository Configuration</em>
+  <em>Figure 6: Private Internal Repository Configuration</em>
 </p>
 
 ❗ If you are also using GitHub as your private internal package repository, the CloudFormation template, [external-repo-github.yaml](cfn/external-repo-github.yaml), is used for deploying the solution and requires the private internal GitHub repository URL as an additional parameter.
@@ -261,7 +261,7 @@ The stack (`external-repo-codeartifact.yaml`) provisions the following primary r
 2. CodePipeline Artifact Bucket and KMS Key to securely store compressed stage input and output artifacts.
 3. CodePipeline Source Action _Pull_Internal_Repository_ to establish GitHub webhook and retrieve filtered source changes.
 4. CodePipeline Build Stage _Download_External_Repository_ to curl external package repository zip URL.
-5. CodePipeline Security Test Stage _Security_Scan_Notify_ to execute CodeGuru Security security and quality scans, publish InfoSec validated external packages to internal private CodeArtifact repository (assuming acceptable severity findings), and notify requesting data scientist of results.
+5. CodePipeline Security Test Stage _Security_Scan_Notify_ to execute CodeGuru Security security and quality scans, publish InfoSec validated external packages to private internal CodeArtifact repository (assuming acceptable severity findings), and notify requesting data scientist of results.
 
 CloudFormation prepopulates stack parameters with the default values provided in the template. To provide alternative input values, you can specify parameters via `ParameterKey=<ParameterKey>,ParameterValue=<Value>` pairs in the `aws cloudformation create-stack` call. 
 
@@ -343,9 +343,9 @@ After a successful stack deployment, the status changes from `CREATE_IN_PROGRESS
 
 ## Running the Guidance
 
-We are using a token-based webhook to connect from the private GitHub repository (containing the public-package-request.csv and codeguru-security-scan.py files) to CodePipeline. The webhook token ensures that POST requests sent to the payload URL originate from your private repository. When you set a token, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
+We are using a token-based webhook to connect from the private internal GitHub repository (containing the external-package-request.csv and codeguru-security-scan.py files) to CodePipeline. The webhook token ensures that POST requests sent to the payload URL originate from your private internal repository. When you set a token, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
 
-With your webhook in place, you are now ready to deploy and launch your SageMaker Studio environment. From your SageMaker Studio environment, you will pull the current version of the public-package-request.csv file from your private GitHub repository, append the desired additional public repository to the request record, then push the updated request file back to the private repository. This will trigger CodePipeline execution so the external package repository can be scanned for InfoSec approval then made available as a private internal package.
+With your webhook in place, you are now ready to deploy and launch your SageMaker Studio environment. From your SageMaker Studio environment, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repository to the request file, then push the updated request file back to the private internal repository. This will trigger CodePipeline execution so the external package repository can be scanned for InfoSec approval then made available as a private internal package.
 
 ### Deploy and Launch SageMaker Studio
 
@@ -371,9 +371,9 @@ Once Studio is deployed, navigate to the [SageMaker console](https://console.aws
   <em>Figure 8: SageMaker Studio Console</em>
 </p>
 
-### Push Updated External Package Repository Request File to Private Repository
+### Push Updated External Package Request File to Private Internal Repository
 
-With your GitHub webhook in place, data scientists operating in SageMaker Studio can pull the current version of the public repository request CSV file from the private GitHub repository, append desired additional public repositories to the request record, then push the updated request file back to the private repository.
+With your GitHub webhook in place, data scientists operating in SageMaker Studio can pull the current version of the external package request file from the private internal GitHub repository, append desired external package repositories to the request file, then push the updated request file back to the private internal repository.
 
 In the SageMaker Studio IDE, open your system terminal:
 
@@ -384,20 +384,21 @@ In the SageMaker Studio IDE, open your system terminal:
   <em>Figure 9: SageMaker Studio JupyterLab Terminal</em>
 </p>
 
-Run the following commands in the terminal to clone your private GitHub repository then update and push your public repository request CSV file:
+Run the following commands in the terminal to clone your private internal GitHub repository then update and push your external package request file:
 
 ```sh
 git init
 git config --global user.email <YOUR-GITHUB-EMAIL>
 git config --global user.name <YOUR-GITHUB-USERNAME>
-# If not already forked, fork the remote repository (https://github.com/aws-samples/sagemaker-external-repository-security.git)
+# If not already forked, fork the remote repository (https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws.git)
 git remote add origin <YOUR-FORKED-REPOSITORY-URL> 
 git clone <YOUR-FORKED-REPOSITORY-URL> 
 cd <local-repo-name>
 git checkout <branch>
-vi <public-package-request.csv>
-# Append your public package name and zip URL to public-repo-request-file.csv # ex: scikit-learn,https://github.com/scikit-learn/scikit-learn/archive/refs/heads/main.zip
-git add <public-package-request.csv>
+vi external-package-request.csv
+# Append your external package name and zip URL to external-package-request-file.csv # ex: scikit-learn,https://github.com/scikit-learn/scikit-learn/archive/refs/heads/main.zip
+# For more information on locating an external package repository's ZIP URL. please see https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives
+git add external-package-request.csv
 git commit -m "Add <PACKAGE-NAME>"
 git push -u
 ```
@@ -409,15 +410,15 @@ git push -u
 CodePipeline is configured with a source action that triggers based on the data scientist's commit to the webhook-enabled GitHub source repository. CodePipeline execution then orchestrates the CodeBuild project to download the remote package repository so that an additional CodeBuild project can be used to perform security scans on the cloned repository artifact. You can view CodePipeline's execution status from the [CodePipeline console](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-view-console.html#pipelines-executions-status-console):
 
 <p align="center">
-  <img src="assets/images/pipeline-execution.png" width="360" height="875">
+  <img src="assets/images/pipeline-execution.png" width="340" height="875">
 </p>
 <p align="center">
   <em>Figure 10: CodePipeline Execution Status</em>
 </p>
 
-CodeGuru Security performs security and quality scans on the public package repository to detect vulnerabilities and return findings. The findings include information about security issues in the public package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
+CodeGuru Security performs security and quality scans on the external package repository to detect vulnerabilities and return findings. The findings include information about security issues in the external package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
 
-The CodeGuru Security Dashboard provides metrics to track the security posture of your public package repositories, including open critical findings, severity distribution of findings, and trends over time for each resource. CodeGuru Security tracks the vulnerabilities and trends across multiple revisions of the same resource using the scan name provided when a scan is created:
+The CodeGuru Security Dashboard provides metrics to track the security posture of your external package repositories, including open critical findings, severity distribution of findings, and trends over time for each resource. CodeGuru Security tracks the vulnerabilities and trends across multiple revisions of the same resource using the scan name provided when a scan is created:
 
 <p align="center">
   <img src="assets/images/codeguru-security-scan-xgboost.svg">
@@ -428,7 +429,7 @@ The CodeGuru Security Dashboard provides metrics to track the security posture o
 
 The security test stage output is analyzed as part of the CodePipeline orchestration. If the security scans return severity findings greater than or equal to medium, then [CodeBuild stop build](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codebuild/client/stop_build.html) is used to stop the build process, and an Amazon Simple Notification (SNS) topic is used to email the negative results to the requesting data scientist.
 
-If the security scans return lower than medium severities, CodeBuild updates the private CodeArtifact (or GitHub) package repository with a new version of the InfoSec approved external package and the SNS topic is used to email the positive results to the requesting data scientist.
+If the security scans return lower than medium severities, CodeBuild updates the private internal CodeArtifact (or GitHub) package repository with a new version of the InfoSec approved external package and the SNS topic is used to email the positive results to the requesting data scientist.
 
 <p align="center">
   <img src="assets/images/codepipeline-overview.svg">
@@ -451,9 +452,9 @@ Then download the CodeArtifact private internal package version asset using the 
   <em> Figure 14: AWS CodeArtifact Private Package Version Asset Download</em>
 </p>
 
-### Use InfoSec Approved Private Package Repository with SageMaker Studio Notebook
+### Use InfoSec Approved Private Internal Package Repository with SageMaker Studio Notebook
 
-Assuming the data scientist's external package repository has been approved by InfoSec, users can use their SageMaker Studio Notebook to download the validated external packages using the newly-created private repository package - Please see [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
+Assuming the data scientist's external package repository has been approved by InfoSec, users can use their SageMaker Studio Notebook to download the validated external packages using the newly-created private internal repository package - Please see [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
 
 ```sh
 aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
@@ -473,7 +474,7 @@ You must clean up provisioned resources to avoid charges in your AWS account.
 
 ### Step 1: Revoke GitHub Personal Access Token
 
-GitHub PATs are configured with an expiration value. If you want to ensure that your PAT cannot be used for programmatic access to your internal private GitHub repository before it reaches its expiry, you can revoke the PAT by following [GitHub's instructions](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/reviewing-and-revoking-personal-access-tokens-in-your-organization).
+GitHub PATs are configured with an expiration value. If you want to ensure that your PAT cannot be used for programmatic access to your private internal GitHub repository before it reaches its expiry, you can revoke the PAT by following [GitHub's instructions](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/reviewing-and-revoking-personal-access-tokens-in-your-organization).
 
 ### Step 2: Clean Up SageMaker Studio MLOps Projects
 
