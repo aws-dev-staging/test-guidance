@@ -6,7 +6,7 @@
 export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-pat --secret-string $GITHUB_PAT --query Name --output text)
 export GITHUB_EMAIL_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-email --secret-string $GITHUB_EMAIL  --query Name --output text)
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}
+export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-github
 
 aws s3 mb s3://${S3_ARTIFACT_BUCKET_NAME} --region us-east-1
 
@@ -16,13 +16,13 @@ aws cloudformation create-stack \
 --parameters \
 ParameterKey=ArtifactStoreBucket,ParameterValue=${S3_ARTIFACT_BUCKET_NAME} \
 ParameterKey=CodePipelineName,ParameterValue=${CODEPIPELINE_NAME} \
+ParameterKey=SNSEmail,ParameterValue=${SNS_EMAIL} \
 ParameterKey=GitHubBranch,ParameterValue=${GITHUB_BRANCH} \
 ParameterKey=GitHubOwner,ParameterValue=${GITHUB_OWNER} \
 ParameterKey=GitHubRepo,ParameterValue=${GITHUB_REPO} \
 ParameterKey=GitHubUser,ParameterValue=${GITHUB_USER} \
 ParameterKey=GitHubToken,ParameterValue=${GITHUB_TOKEN_SECRET_NAME} \
 ParameterKey=GitHubEmail,ParameterValue=${GITHUB_EMAIL_SECRET_NAME} \
-ParameterKey=PublicGitHubUrl,ParameterValue=${PUBLIC_GITHUB_URL} \
 ParameterKey=PrivateGitHubUrl,ParameterValue=${PRIVATE_GITHUB_URL} \
 ParameterKey=CodeBuildLambdaVpc,ParameterValue=${CODEBUILD_VPC_ID} \
 ParameterKey=CodeBuildLambdaSubnet,ParameterValue=${CODEBUILD_SUBNET_ID1}\\,${CODEBUILD_SUBNET_ID2} \
