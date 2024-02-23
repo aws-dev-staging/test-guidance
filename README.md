@@ -16,16 +16,16 @@
 4. [Deployment Validation](#deployment-validation)
 5. [Running the Guidance](#running-the-guidance)
 6. [Next Steps](#next-steps)
-7. [Cleanup](#cleanup)
+7. [Clean Up](#clean-up)
 
 ## Overview
 
-This solution demonstrates the deployment of AWS Code Services (for example, [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html), [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html),  [Amazon CodeGuru Security](https://docs.aws.amazon.com/codeguru/latest/security-ug/what-is-codeguru-security.html), [AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html)) to streamline the process for data scientists to access external package repositories while ensuring Information Security (InfoSec) compliance. Through an automated orchestration pipeline, public packages undergo comprehensive security scans including static application security testing, software composition analysis, dynamic code analysis, and image vulnerability scanning. Once approved by InfoSec, data scientists gain access to these packages within their private Jupyter Notebook environments (for example, [Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html)). Importantly, InfoSec governance controls are seamlessly integrated to maintain a smooth data science workflow experience without disruptions. The solution can also be expanded upon to account for general developer worklfows, where developers leverage external package dependencies.
+This solution demonstrates the deployment of AWS Code Services (for example, [AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html), [AWS CodeBuild](https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html),  [Amazon CodeGuru Security](https://docs.aws.amazon.com/codeguru/latest/security-ug/what-is-codeguru-security.html), [AWS CodeArtifact](https://docs.aws.amazon.com/codeartifact/latest/ug/welcome.html)) to streamline the process for data scientists to access external package repositories while ensuring Information Security (InfoSec) compliance. Through an automated orchestration pipeline, public packages undergo comprehensive security scans such as static application security testing, software composition analysis, dynamic code analysis, and image vulnerability scanning. Once approved by InfoSec, data scientists gain access to these packages within their private Jupyter Notebook environments (for example, [Amazon SageMaker](https://docs.aws.amazon.com/sagemaker/latest/dg/whatis.html)). Importantly, InfoSec governance controls are seamlessly integrated to maintain a smooth data science workflow experience without disruptions. The solution can also be extended to accommodate general developer workflows, wherein developers utilize external package dependencies.
 
-This solution covers three main topics:
-1. Self-service data scientist workflow for using external package repositories.
-2. Automated orchestration of external package repository security scanning.
-3. Creation and maintenance of InfoSec-compliant private internal package repository.
+This solution addresses three primary topics:
+1. Self-service workflow for data scientist to utilize external package dependencies.
+2. Automated orchestration of security scanning for external package dependencies.
+3. Establishment and upkeep of an InfoSec-compliant private internal package repository.
 
 ### Demo Recording
 [<img src="assets/images/thumbnail.png" width="100%">](https://www.youtube.com/watch?v=x7Xwbuh-C2o "External Package Security: Amazon SageMaker and AWS Code Services - YouTube")
