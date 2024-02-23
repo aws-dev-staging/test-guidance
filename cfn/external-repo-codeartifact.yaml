@@ -96,11 +96,10 @@ Parameters:
     Default: '<YOUR-PRIVATE-SUBNET-ID1>, <YOUR-PRIVATE-SUBNET-ID2>'
 
 Resources:
-  #
+  # Email Notification
   SNSTopic:
     Type: AWS::SNS::Topic
 
-  #
   SNSSubscription:
     Type: AWS::SNS::Subscription
     Properties: 
@@ -227,7 +226,6 @@ Resources:
                 - public-package-request.csv
                 - $EXTERNAL_PACKAGE_NAME.zip
           Type: CODEPIPELINE
-        TimeoutInMinutes: 30
 
   # Security Scan and Notify Stage
   SecurityScanCodeBuild:
@@ -277,7 +275,6 @@ Resources:
               files:
                 - $EXTERNAL_PACKAGE_FILE_NAME
           Type: CODEPIPELINE
-        TimeoutInMinutes: 30
 
   # CodePipeline to Orchestrate External Package Repo InfoSec Validation Workflow
   CodePipeline:
