@@ -23,6 +23,7 @@ Metadata:
         Parameters:
           - ArtifactStoreBucket
           - CodePipelineName
+          - SNSEmail
       - Label:
           default: Git Repository Settings
         Parameters:
@@ -32,7 +33,6 @@ Metadata:
           - GitHubUser
           - GitHubToken
           - GitHubEmail
-          - PublicGitHubUrl
           - PrivateGitHubUrl
       - Label:
           default: Network Configuration
@@ -44,6 +44,8 @@ Metadata:
         default: S3 Bucket Containing Lambda Handler, Lambda Data Loader, and Lex Deployment Packages, along with Customer FAQ and Mortgage Application example documents.
       CodePipelineName:
         default: CodePipeline Name
+      SNSEmail:
+        default: SNS Email
       GitHubBranch:
         default: GitHub Branch
       GitHubOwner:
@@ -56,8 +58,6 @@ Metadata:
         default: GitHub PAT Secrets Manager ARN
       GitHubEmail:
         default: GitHub Email Secrets Manager ARN
-      PublicGitHubUrl:
-        default: Public Package Repository URL
       PrivateGitHubUrl:
         default: Private Internal Repository URL
       CodeBuildLambdaVpc:
@@ -74,6 +74,10 @@ Parameters:
     Description: Name for CodePipeline.
     Type: String
     Default: external-package-pipeline
+  SNSEmail:
+    Description: SNS Email.
+    Type: String
+    Default: <YOUR-SNS-EMAIL>
   GitHubBranch:
     Description: GitHub Branch to clone.
     Type: String
@@ -101,10 +105,6 @@ Parameters:
     Type: String
     NoEcho: true
     Default: <YOUR-GITHUB-EMAIL-SECRET-NAME>
-  PublicGitHubUrl:
-    Description: Public Package Repository URL
-    Type: String
-    Default: <PUBLIC-PACKAGE-REPO-URL>
   PrivateGitHubUrl:
     Description: Private Internal Repository URL
     Type: String
@@ -119,6 +119,17 @@ Parameters:
     Default: '<YOUR-PRIVATE-SUBNET-ID1>, <YOUR-PRIVATE-SUBNET-ID2>'
 
 Resources:
+  # Email Notification
+  SNSTopic:
+    Type: AWS::SNS::Topic
+
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties: 
+      Endpoint: !Ref SNSEmail
+      Protocol: email
+      TopicArn: !Ref SNSTopic
+
   # CodeBuild Repo Clone Build Project
   RepoCloneCodeBuild:
       Type: AWS::CodeBuild::Project
@@ -151,7 +162,6 @@ Resources:
               files:
                 - $GitHubBranch.tar.gz
           Type: NO_SOURCE
-        TimeoutInMinutes: 14
 
   # CodeBuild Security Scan Build Project
   SecurityScanCodeBuild:
@@ -190,7 +200,6 @@ Resources:
                 - $GitHubBranch.tar.gz
           Type: CODEPIPELINE
           Type: NO_SOURCE
-        TimeoutInMinutes: 14
 
   # CodeBuild Repo Push Build Project
   RepoPushCodeBuild:
@@ -254,7 +263,6 @@ Resources:
                   - echo $GIT_COMMIT_MSG
                   - echo "=======================End-Deployment============================="
           Type: NO_SOURCE
-        TimeoutInMinutes: 14
 
   # CodePipeline to Orchestrate External Package Repo InfoSec Validation Workflow
   CodePipeline:
