@@ -5,7 +5,7 @@
 
 export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-token --secret-string $PRIVATE_GITHUB_PAT --query Name --output text)
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}
+export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-codeartifact
 
 aws s3 mb s3://${S3_ARTIFACT_BUCKET_NAME} --region us-east-1
 
