@@ -97,7 +97,9 @@ def main():
                                 Subject=subject,
                                 Message=str(get_findings_response["findings"]),
                             )
-                            stop_build = codebuild_client.stop_build(id=codebuild_id)
+
+                            # Exit the build run   
+                            # stop_build = codebuild_client.stop_build(id=codebuild_id)
                             exit()
 
                 print("Publishing InfoSec Validated Package Repository to Private Internal CodeArtifact...")
