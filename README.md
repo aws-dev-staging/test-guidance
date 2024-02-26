@@ -352,11 +352,13 @@ We are using a token-based webhook to establish a connection from the private in
 
 With your webhook in place, you are prepared to deploy and launch your SageMaker Studio environment. From there, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repositories to the request file, then push the updated request file back to the private internal repository. This action triggers CodePipeline execution, enalbing scanning of the external package repository for InfoSec approval before making it available as a private internal package.
 
-### Deploy and Launch SageMaker Studio
+### Deploy and Launch Amazon SageMaker Studio
 
 This section provides an overview of utilizing SageMaker Studio's system terminal to pull, edit, and push file copies between local and remote repositories. Alternatively, you can run your git commands from your local system terminal or another notebook environment.
 
 You can deploy Amazon SageMaker Studio into a controlled environment with multi-layer security and MLOps pipelines by following the instructions in the [Amazon SageMaker Secure MLOps Guide](https://github.com/aws-samples/amazon-sagemaker-secure-mlops).
+
+#### Amazon SageMaker Studio Private Network Architecture
 
 SageMaker Studio Notebooks allow direct Internet access by default, however, this could provide an additional avenue for unauthorized access or data sharing. To mitigate these risks, you can control your notebook data flows by launching SageMaker Studio in your Amazon Virtual Private Cloud (VPC), where traffic to and from your Studio Domain occurs through an elastic network interface (ENI) in a private VPC subnet. This solution architecture, depicted in the following [VPC-only deployment pattern](https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html#studio-notebooks-and-internet-access-vpc), enables you to restrict Internet access, monitor and inspect traffic using standard AWS networking and security capabilities (for example, [AWS Network Firewall](https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html)), and connect to other AWS resources through [VPC Endpoints powered by AWS PrivateLink](https://aws.amazon.com/privatelink/). The following diagram highlights the centralized network egress inspection architecture, where NGW is a default route target in the private subnet route table for the Inspection VPC. Internet-bound traffic is inspected using AWS Network Firewall before it is routed to the IGW.
 
@@ -364,6 +366,8 @@ SageMaker Studio Notebooks allow direct Internet access by default, however, thi
   <img src="assets/images/sagemaker-studio-vpc-only.svg"><br>
   <span style="display: block; text-align: center;"><em>Figure 7: SageMaker Studio Private Networking Architecture</em></span>
 </p>
+
+#### Launch Amazon SageMaker Studio
 
 Once Studio is deployed, navigate to the [SageMaker console](https://console.aws.amazon.com/sagemaker/home?#/dashboard), select **Domains** from the menu on the left, then choose your domain.
 
@@ -385,7 +389,7 @@ In the SageMaker Studio IDE, open your system terminal:
   <span style="display: block; text-align: center;"><em>Figure 9: SageMaker Studio JupyterLab Terminal</em></span>
 </p>
 
-Run the following commands in the terminal to clone your private internal GitHub repository then update and push your external package request file:
+To clone your private internal GitHub repository and update the external package request file, run the following commands in your terminal:
 
 ```sh
 git init
