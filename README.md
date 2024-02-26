@@ -51,13 +51,13 @@ Data scientists pull the current version of the [external-package-request.csv](e
 </p>
 
 **2, 3 – External Package Repository Ingest**  
-The CodePipeline _Pull_Internal_Repository_ source action runs based on the external package request file check-in to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a personal access token stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the external-package-request.csv file, identifies the external package repository to ingest, and then fetches the remote repository zip URL using _curl_. The remote external package repository is stored as a build stage output artifact in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3) and later used as the input artifact for the security test stage.
+The CodePipeline _Pull_Internal_Repository_ source action runs based on the external package request file check-in to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a personal access token stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the external-package-request.csv file, identifies the external package repository to ingest, and then fetches the remote repository zip URL using _curl_. The remote external package repository is stored as a build stage output artifact in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3), encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS), and later used as the input artifact for the security test stage.
 
 **4 – Infrastructure Security**  
 Centralized Internet egress occurs through a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) (NGW) attached to the egress [Virtual Private Cloud](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/vpc-tkv.html) (VPC) in the Customer Networking Account, reducing costs associated with a distributed model where NGWs are deployed in every spoke VPC. The [Elastic IP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html) (EIP) of the NGW provides customers with a single IP address that they can include in their firewall ruleset or allow-list for egress from their private internal network.
 
 **5 – Automated Security Scanning**  
-A CodeBuild project runs [CodeGuru Security security and quality scans](https://docs.aws.amazon.com/codeguru/latest/security-ug/how-codeguru-security-works.html) in the _Security_Scan_Notify_ security test stage. CodeGuru Security scanning and finding severity analysis logic is implemented in the [codeguru-security-scan.py](codeguru-security-scan.py) Python script, which is run during the _Security_Scan_Notify_ security test stage.
+A CodeBuild project runs [CodeGuru Security security scans](https://docs.aws.amazon.com/codeguru/latest/security-ug/how-codeguru-security-works.html) in the _Security_Scan_Notify_ security test stage. CodeGuru Security scanning and finding severity analysis logic is implemented in the [codeguru-security-scan.py](codeguru-security-scan.py) Python script, which is run during the _Security_Scan_Notify_ security test stage.
 
 **6, 7 – Security Results and Private Internal Package Repository Management**  
 If the security scans return findings with severities lower than medium, the _Security_Scan_Notify_ stage publishes a new 'Latest' package version to the private internal AWS CodeArtifact package repository that was created during the initial solution deployment. However, if any of the finding severities are medium or higher, no private package version is published to CodeArtifact, and instead, Amazon CodeGuru Security findings are shared for further review. In either case, an [Amazon Simple Notification Service](https://docs.aws.amazon.com/sns/latest/dg/welcome.html) (SNS) topic is used to email the results to the requesting data scientist.
@@ -73,7 +73,7 @@ If the security scans return findings with severities lower than medium, the _Se
 </p>
 
 **8, 9 – MLOps Workflow**  
-Data scientists authenticate to their [Amazon SageMaker Studio](https://docs.aws.amazon.com/sagemaker/latest/dg/studio.html) domain using [AWS Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) or [Identity and Access Management](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam.html) (IAM) mode. Each auth-mode maps to the user profile’s associated execution role that defines the user’s maximum permissible notebook actions. SageMaker Studio runs on an environment managed by AWS. Studio provides an [elastic network interface](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html) (ENI) that can be deployed into a customer-managed VPC for more granular control of notebook traffic. Data scientists run their SageMaker Studio Notebook, which installs the InfoSec-validated external packages using the 'Latest' CodeArtifact private package version asset:
+Data scientists authenticate to their [Amazon SageMaker Studio](https://docs.aws.amazon.com/sagemaker/latest/dg/studio.html) domain using [AWS Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) or [Identity and Access Management](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam.html) (IAM) mode. Each auth-mode maps to the user profile’s associated execution role that defines the user’s maximum permissible notebook actions. SageMaker Studio runs on an environment managed by AWS. Studio provides an [elastic network interface](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html) (ENI) that can be deployed into a customer-managed VPC for more granular control of notebook traffic. Data scientists run their SageMaker Studio Notebook, which installs the InfoSec-approved external packages using the 'Latest' CodeArtifact private package version asset:
 
 ```sh
 aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
@@ -81,13 +81,13 @@ aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
 --package <YOUR-PACKAGE-NAME> --package-version Latest --asset <YOUR-UNIQUE-PACKAGE-VERSION-ASSET>.zip <YOUR-LOCAL-FILE-NAME>.zip 
 ```
 
-❗This solution also supports a private internal GitHub repository as the target private internal package repository for customers already using GitHub. Data scientists' notebooks will follow the same pattern of installing InfoSec-validated external packages using the private internal repository endpoint (for example, _pip install git+https://github.com/customer-org/new-repo.git)_. You can view the GitHub solution architecture at [assets/images/github-overview.svg](assets/images/github-overview.svg).
+❗This solution also supports a private internal GitHub repository as the target private internal package repository for customers already using GitHub. Data scientists' notebooks will follow the same pattern of installing InfoSec-approved external packages using the private internal repository endpoint (for example, _pip install git+https://github.com/customer-org/new-repo.git)_. You can view the GitHub solution architecture at [assets/images/github-overview.svg](assets/images/github-overview.svg).
 
 ### Cost
 
 You are responsible for the cost of the AWS services used while running this Guidance. As of February 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) AWS Region is approximately $18.315 per month based on the below assumptions.
 
-- Frequency of Pipeline Executions: Pipeline is executed 100 times per day for package updates and scans.
+- Frequency of Pipeline Executions: Pipeline is ran 100 times per day for package updates and scans.
 - Size of Packages: Moderate-sized packages being built and scanned, with an average build time of 10 minutes.
 - Storage Requirements: Moderate usage, such as 100GB for artifacts and 50GB for the package repository.
 - Frequency of Security Scans: Security scans are performed for each package update.
@@ -210,7 +210,7 @@ cfn_nag_scan --input-path ./codeartifact-private-repo.yaml
 
 ## Deployment Steps
 
-The following workflow diagram illustrates the end-to-end deployment process outlined in this guide. The resultant architecture includes an AWS CodePipeline workflow orchestration triggered by a token-authenticated webhook linked to the private internal GitHub repository containing the external package request file. Within the pipeline, an AWS CodeBuild project is utilized to clone the external package repositories, enalbing another CodeBuild project to conduct Amazon CodeGuru Security security and quality scans. The requesting data scientists are notified regardless of the outcome. However, only InfoSec-approved packages are published to the private internal AWS CodeArtifact (or GitHub) package repository before informing the data scientists. In the case of InfoSec-refused external packages with medium or higher severities, data scientists are provided with CodeGuru Security finding details for further investigation.
+The following workflow diagram illustrates the end-to-end deployment process outlined in this guide. The resultant architecture includes an AWS CodePipeline workflow orchestration triggered by a token-authenticated webhook linked to the private internal GitHub repository containing the external package request file. Within the pipeline, an AWS CodeBuild project is utilized to clone the external package repositories, enalbing another CodeBuild project to conduct Amazon CodeGuru Security security scans. The requesting data scientists are notified regardless of the outcome. However, only InfoSec-approved packages are published to the private internal AWS CodeArtifact (or GitHub) package repository before informing the data scientists. In the case of InfoSec-refused external packages with medium or higher severities, data scientists are provided with CodeGuru Security finding details for further investigation.
 
 <p align="center">
   <img src="assets/images/deployment-workflow.svg"><br>
@@ -220,7 +220,7 @@ The following workflow diagram illustrates the end-to-end deployment process out
 ### Fork and Clone the Repository
 Follow [GitHub's instructions](https://docs.github.com/en/get-started/quickstart/fork-a-repo?tool=webui&platform=mac) to fork this repository. This action creates a copy of the repository that is disconnected from the original codebase, allowing you to make necessary modifications.
 
-Clone the repository using the provided forked repository URL:
+Create a local copy of the forked repository using _git clone_:
 
 ```sh
 git clone <YOUR-FORKED-REPOSITORY-URL>
@@ -235,7 +235,7 @@ If your environment lacks the required VPC setup, use the provided [VPC CloudFor
 To authenticate with your private internal GitHub repository, generate a [GitHub personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (PAT). You may prefer to use a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/creating-github-apps/about-apps) to access resources on behalf of an organization or for long-lived integrations. To create your PAT, follow GitHub's instructions for [creating a personal access token (classic)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic). Take note of your PAT as it will later be used for AWS Secrets Manager configuration.
 
 ### Gather Private Internal Repository Configuration
-Your private internal repository, containing [external-package-request.csv](external-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py), serves as the source code repository. Its webhook triggers the CodePipeline source action with each new _git push_. Please navigate to your private internal repository and note the following:
+Your private internal repository, containing [external-package-request.csv](external-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py), serves as the source code repository. Its webhook triggers the CodePipeline source action with each new commit. Navigate to your private internal repository and note the following, which will later be used to set environment variables:
 - Branch.
 - Owner.
 - Name.
@@ -249,20 +249,28 @@ Your private internal repository, containing [external-package-request.csv](exte
 
 ### Deploy AWS CloudFormation Stack
 
-The following section provides instructions for deploying the parameterized [codeartifact-private-repo.yaml](cfn/codeartifact-private-repo.yaml) CloudFormation template into your AWS account. You can also deploy the solution using the [create-codeartifact-stack.sh](shell/create-codeartifact-stack.sh) shell script. Please note: if you are using GitHub instead of AWS CodeArtifact as your private internal package repository, you will use the [create-github-stack.sh](shell/create-github-stack.sh) shell script to deploy the [github-private-repo.yaml.yaml](cfn/github-private-repo.yaml) stack.
+The following section provides instructions for deploying the parameterized [codeartifact-private-repo.yaml](cfn/codeartifact-private-repo.yaml) CloudFormation template into your AWS account using the [create-codeartifact-stack.sh](shell/create-codeartifact-stack.sh) shell script. 
+
+If you are instead using GitHub as your private internal package repository, deploy the solution using the [create-github-stack.sh](shell/create-github-stack.sh) shell script to deploy the [github-private-repo.yaml.yaml](cfn/github-private-repo.yaml) stack.
 
 The stack (`codeartifact-private-repo.yaml`) provisions the following primary resources:
-1. CodePipeline pipeline to orchestrate solution workflow.
-2. CodePipeline artifact bucket and KMS key to securely store compressed stage input and output artifacts.
-3. CodePipeline source action _Pull_Internal_Repository_ to establish GitHub webhook and retrieve filtered source changes.
-4. CodePipeline build stage _Download_External_Repository_ to curl external package repository zip URL.
-5. CodePipeline Security Test Stage _Security_Scan_Notify_ to execute CodeGuru Security security and quality scans, publish InfoSec-validated external packages to private internal CodeArtifact repository (assuming acceptable severity findings), and notify requesting data scientist of results.
+1. AWS CodeArtifact domain and private internal package repository for managing software packages.
+2. Two AWS CodeBuild Projects:
+    - DownloadRepoCodeBuild: Downloads the external package repository using the request file.
+    - SecurityScanCodeBuild: Performs CodeGuru security scans on the downloaded external packages, publishes InfoSec-approved external packages to private internal CodeArtifact repository (assuming acceptable severity findings), and notifies requesting data scientist of results.
+3. AWS CodePipeline source action to establish GitHub webhook and retrieve filtered source changes.
+4. AWS CodePipeline to orchestrate the workflow, integrating source actions, CodeBuild projects, and artifact handling.
+5. Amazon S3 bucket and AWS KMS key to securely store CodePipeline artifacts.
+6. Amazon SNS topic and subscription used for email notifications.
+7. Amazon Elastic Cloud Compute (EC2) [security group](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html)) for VPC-attached CodeBuild projects.
+8. IAM role and policies:
+    - CodeServicesRole: IAM role for AWS Code Services (CodePipeline and CodeBuild).
+    - CodeServicesIamPolicy: IAM policy defining permissions for the Code Services role.
+    - CodeServicesVpcEndpointPolicy: IAM policy for AWS Code Services VPC Endpoints.
 
-The [Deployment Automation Script](shell/create-codeartifact-stack.sh), which will be used in the following Deploy AWS CloudFormation Stack section, will publish your PAT to AWS Secrets Manager using AWS CLI commands and the secret name will be used as the _PrivateGitHubToken_ CloudFormation parameter.
+AWS CloudFormation prepopulates stack parameters with the default values provided in the template. To provide alternative input values, you can specify parameters as environment variables that are referenced in the `ParameterKey=<ParameterKey>,ParameterValue=<Value>` pairs in the _aws cloudformation create-stack_ command.
 
-CloudFormation prepopulates stack parameters with the default values provided in the template. To provide alternative input values, you can specify parameters via `ParameterKey=<ParameterKey>,ParameterValue=<Value>` pairs in the `aws cloudformation create-stack` call. 
-
-❗You are required to specify valid CloudFormation parameters for your prerequisite AWS resources (for example, VPC, subnets, S3 bucket) and GitHub environment settings (for example, PrivateGitHubBranch, PrivateGitHubOwner, PrivateGitHubRepo, PrivateGitHubToken) during stack deployment. Set the corresponding CloudFormation parameters to the names, values, and resource IDs of your existing resources:
+Before deploying the solution, you are required to specify valid name, value, and resource ID environment variables which will be used to set the corresponding CloudFormation parameters:
 
 ```sh
 # Provide your own parameter values for CloudFormation stack name, CodePipeline pipeline name, and SNS email
@@ -276,7 +284,7 @@ export PRIVATE_GITHUB_BRANCH=<YOUR-PRIVATE-REPOSITORY-BRANCH>
 export PRIVATE_GITHUB_OWNER=<YOUR-PRIVATE-REPOSITORY-OWNER>
 export PRIVATE_GITHUB_REPO=<YOUR-PRIVATE-REPOSITORY-NAME>
 
-# Below parameter values acquired from 'Establish VPC Networking Configuration' pre-deployment
+# Below parameter values acquired from 'Configure VPC Networking' pre-deployment
 export CODEBUILD_VPC_ID=<YOUR-VPC-ID>
 export CODEBUILD_SUBNET_ID1=<YOUR-PRIVATE-SUBNET-ID-1>
 export CODEBUILD_SUBNET_ID2=<YOUR-PRIVATE-SUBNET-ID-2>
@@ -287,31 +295,32 @@ export GITHUB_EMAIL=<YOUR-GITHUB-EMAIL>
 export PRIVATE_GITHUB_URL=<YOUR-PRIVATE-PACKAGE-REPOSITORY-URL>
 ```
 
+Run the _create-codeartifact-stack.sh_ shell script to deploy the solution resources defined in the codeartifact-private-repo.yaml CloudFormation template.
+
 ```sh
 # cd guidance-for-secure-access-to-external-package-repositories-on-aws/shell/
 # chmod u+x create-codeartifact-stack.sh
 
 source ./create-codeartifact-stack.sh
 
-# (OPTIONAL) To deploy external-repo-github.yaml stack, execute the below:
+# (OPTIONAL) To deploy the github-private-repo.yaml stack, run the below:
 # source ./create-github-stack.sh
 ```
 
-#### Deployment Automation Script
-The above ```source ./create-codeartifact-stack.sh``` shell command executes the following AWS CLI commands to deploy the solution stack:
+The preceding ```source ./create-codeartifact-stack.sh``` shell command runs the following AWS CLI commands to deploy the solution stack:
 
 ```sh
-export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-token-3 --secret-string $PRIVATE_GITHUB_PAT --query Name --output text)
+export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-token --secret-string $PRIVATE_GITHUB_PAT --query Name --output text)
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export S3_ARTIFACT_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-codeartifact
+export S3_ARTIFACTS_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-codeartifact
 
-aws s3 mb s3://${S3_ARTIFACT_BUCKET_NAME} --region us-east-1
+aws s3 mb s3://${S3_ARTIFACTS_BUCKET_NAME} --region us-east-1
 
 aws cloudformation create-stack \
 --stack-name ${STACK_NAME} \
 --template-body file://../cfn/external-repo-codeartifact.yaml \
 --parameters \
-ParameterKey=ArtifactStoreBucket,ParameterValue=${S3_ARTIFACT_BUCKET_NAME} \
+ParameterKey=S3ArtifactsBucket,ParameterValue=${S3_ARTIFACTS_BUCKET_NAME} \
 ParameterKey=CodePipelineName,ParameterValue=${CODEPIPELINE_NAME} \
 ParameterKey=SNSEmail,ParameterValue=${SNS_EMAIL} \
 ParameterKey=PrivateGitHubBranch,ParameterValue=${PRIVATE_GITHUB_BRANCH} \
@@ -324,43 +333,44 @@ ParameterKey=CodeBuildLambdaSubnet,ParameterValue=${CODEBUILD_SUBNET_ID1}\\,${CO
 
 aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
-
 ```
 
 ## Deployment Validation
 
-You can track the CloudFormation stack deployment status in [AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringStatus=active&filteringText=&viewNested=true&hideStacks=false) or in your terminal with the following commands:
+To monitor the CloudFormation stack deployment status, you can either use the [AWS CloudFormation console](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringStatus=active&filteringText=&viewNested=true&hideStacks=false) or run the following commands in your terminal:
 
 ```
 aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
 ```
 
-After a successful stack deployment, the status changes from `CREATE_IN_PROGRESS` to `CREATE_COMPLETE`.
+Upon successful stack deployment, the status transitions from `CREATE_IN_PROGRESS` to `CREATE_COMPLETE`.
 
 ## Running the Guidance
 
-We are using a token-based webhook to connect from the private internal GitHub repository (containing the external-package-request.csv and codeguru-security-scan.py files) to CodePipeline. The webhook token ensures that POST requests sent to the payload URL originate from your private internal repository. When you set a token, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
+We are using a token-based webhook to establish a connection from the private internal GitHub repository (containing the external-package-request.csv and codeguru-security-scan.py files) to CodePipeline. This webhook ensures that POST requests sent to the payload URL originate from your private internal repository. With token authentication configured, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
 
-With your webhook in place, you are now ready to deploy and launch your SageMaker Studio environment. From your SageMaker Studio environment, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repository to the request file, then push the updated request file back to the private internal repository. This will trigger CodePipeline execution so the external package repository can be scanned for InfoSec approval then made available as a private internal package.
+With your webhook in place, you are prepared to deploy and launch your SageMaker Studio environment. From there, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repositories to the request file, then push the updated request file back to the private internal repository. This action triggers CodePipeline execution, enalbing scanning of the external package repository for InfoSec approval before making it available as a private internal package.
 
 ### Deploy and Launch SageMaker Studio
 
-This section provides an overview of how to use SageMaker Studio's system terminal to pull, edit, and push file copies between local and remote repositories. You can alternatively execute your git commands from your local system terminal or other notebook environment.
+This section provides an overview of utilizing SageMaker Studio's system terminal to pull, edit, and push file copies between local and remote repositories. Alternatively, you can run your git commands from your local system terminal or another notebook environment.
 
 You can deploy Amazon SageMaker Studio into a controlled environment with multi-layer security and MLOps pipelines by following the instructions in the [Amazon SageMaker Secure MLOps Guide](https://github.com/aws-samples/amazon-sagemaker-secure-mlops).
 
-SageMaker Studio Notebooks allow direct Internet access by default, however, this could provide an additional avenue for unauthorized access or sharing of your data. You can control your notebook data flows by launching SageMaker Studio in your Amazon Virtual Private Cloud (VPC), where traffic to and from your Studio Domain occurs through an elastic network interface (ENI) in a private VPC subnet. This solution architecture follows the [VPC-only deployment pattern](https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html#studio-notebooks-and-internet-access-vpc) shown below, allowing you to restrict Internet access, monitor and inspect traffic using standard AWS networking and security capabilities (for example, [AWS Network Firewall](https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html)), and connect to other AWS resources through [VPC Endpoints powered by AWS PrivateLink](https://aws.amazon.com/privatelink/). The diagram below highlights the centralized network egress inspection architecture, where NAT Gateway (NGW) is a default route target in the private subnet route table for the Inspection VPC. Internet-bound traffic is inspected using AWS Network Firewall before it is routed to the Internet Gateway (IGW).
+SageMaker Studio Notebooks allow direct Internet access by default, however, this could provide an additional avenue for unauthorized access or data sharing. To mitigate these risks, you can control your notebook data flows by launching SageMaker Studio in your Amazon Virtual Private Cloud (VPC), where traffic to and from your Studio Domain occurs through an elastic network interface (ENI) in a private VPC subnet. This solution architecture, depicted in the following [VPC-only deployment pattern](https://docs.aws.amazon.com/sagemaker/latest/dg/studio-notebooks-and-internet-access.html#studio-notebooks-and-internet-access-vpc), enables you to restrict Internet access, monitor and inspect traffic using standard AWS networking and security capabilities (for example, [AWS Network Firewall](https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html)), and connect to other AWS resources through [VPC Endpoints powered by AWS PrivateLink](https://aws.amazon.com/privatelink/). The following diagram highlights the centralized network egress inspection architecture, where NGW is a default route target in the private subnet route table for the Inspection VPC. Internet-bound traffic is inspected using AWS Network Firewall before it is routed to the IGW.
 
 <p align="center">
   <img src="assets/images/sagemaker-studio-vpc-only.svg"><br>
   <span style="display: block; text-align: center;"><em>Figure 7: SageMaker Studio Private Networking Architecture</em></span>
 </p>
 
-Once Studio is deployed, navigate to the [SageMaker console](https://console.aws.amazon.com/sagemaker/home?#/dashboard), select **Studio** from the menu on the left, select your **user profile** from the dropdown, then select **Open Studio**. This will launch your Jupyter Lab environment.
+Once Studio is deployed, navigate to the [SageMaker console](https://console.aws.amazon.com/sagemaker/home?#/dashboard), select **Domains** from the menu on the left, then choose your domain.
+
+Under **User profiles**, select your desired user profile, then choose **Studio** from the Launch dropdown to launch your Jupyter Lab environment.
 
 <p align="center">
-  <img src="assets/images/studio-console.png" width="70%" height="70%"><br>
+  <img src="assets/images/studio-console.svg" width="70%" height="70%"><br>
   <span style="display: block; text-align: center;"><em>Figure 8: SageMaker Studio Console</em></span>
 </p>
 
@@ -405,13 +415,13 @@ CodePipeline is configured with a source action that triggers based on the data 
   <span style="display: block; text-align: center;"><em>Figure 10: CodePipeline Execution Status</em></span>
 </p>
 
-CodeGuru Security performs security and quality scans on the external package repository to detect vulnerabilities and return findings. The findings include information about security issues in the external package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
+CodeGuru Security performs security scans on the external package repository to detect vulnerabilities and return findings. The findings include information about security issues in the external package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
 
 The CodeGuru Security Dashboard provides metrics to track the security posture of your external package repositories, including open critical findings, severity distribution of findings, and trends over time for each resource. CodeGuru Security tracks the vulnerabilities and trends across multiple revisions of the same resource using the scan name provided when a scan is created:
 
 <p align="center">
   <img src="assets/images/codeguru-security-scan-xgboost.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 11: Amazon CodeGuru Security - Security and Quality Scan Findings</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 11: Amazon CodeGuru Security - Security Scan Findings</em></span>
 </p>
 
 ---
@@ -441,7 +451,7 @@ Then download the CodeArtifact private internal package version asset using the 
 
 ### Use InfoSec-Approved Private Internal Package Repository with SageMaker Studio Notebook
 
-Assuming the data scientist's external package repository has been approved by InfoSec, users can use their SageMaker Studio Notebook to download the validated external packages using the newly-created private internal repository package - Please see [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
+Assuming the data scientist's external package repository has been approved by InfoSec, users can use their SageMaker Studio Notebook to download the approved external packages using the newly-created private internal repository package - Please see [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
 
 ```sh
 aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
@@ -471,8 +481,9 @@ SageMaker Studio projects and corresponding S3 buckets with project and pipeline
 If you used CodeArtifact as your private internal package repository, use ```./delete-codeartifact-stack.sh``` to delete your solution stack.
 If you used GitHub as your private internal package repository, use ```./delete-github-stack.sh``` to delete your solution stack.
 
-The above shell command needs to be executed from the same working directory in which you deployed the solution stack so that it can reference the appropriate environment variables that were set as part of the deployment automation script. 
-The shell command executes the following AWS CLI commands to delete the solution stack:
+The above shell command needs to be run from the same working directory in which you deployed the solution stack so that it can reference the appropriate environment variables that were set as part of the solution deployment script.
+
+The shell command runs the following AWS CLI commands to delete the solution stack:
 
 #### Clean Up Automation Script
 
