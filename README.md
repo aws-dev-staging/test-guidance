@@ -11,7 +11,7 @@
     - [Operating System](#operating-system)
     - [Multi-Account Configuration](#multi-account-configuration)
     - [Required Permissions](#required-permissions)
-    - [Run Security Scan on the CloudFormation Template](#run-security-scan-on-the-cloudFormation-template)
+    - [Run Security Scan on the CloudFormation Template](#optional-run-security-scan-on-the-cloudFormation-template)
 3. [Deployment Steps](#deployment-steps)
     - [Fork and Clone the Repository](#fork-and-clone-the-repository)
     - [Configure VPC Networking](#configure-vpc-networking)
