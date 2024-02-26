@@ -412,16 +412,16 @@ git push -u
 
 ## CodePipeline Clones External Repository and Performs Security Scans
 
-CodePipeline is configured with a source action that triggers based on the data scientist's commit to the webhook-enabled GitHub source repository. CodePipeline execution then orchestrates the CodeBuild project to download the remote package repository so that an additional CodeBuild project can be used to perform security scans on the cloned repository artifact. You can view CodePipeline's execution status from the [CodePipeline console](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-view-console.html#pipelines-executions-status-console):
+CodePipeline is configured with a source action triggered by the data scientist's commit to the webhook-enabled GitHub source repository. During CodePipeline orchestration, a CodeBuild project is used to download the remote package repositories so that an additional CodeBuild project can be used to perform security scans on the cloned repository artifacts. You can monit0r CodePipeline's execution status from the [CodePipeline console](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-view-console.html#pipelines-executions-status-console):
 
 <p align="center">
   <img src="assets/images/pipeline-execution.png" width="340" height="875"><br>
   <span style="display: block; text-align: center;"><em>Figure 10: CodePipeline Execution Status</em></span>
 </p>
 
-CodeGuru Security performs security scans on the external package repository to detect vulnerabilities and return findings. The findings include information about security issues in the external package repository code, the vulnerabilities' locations in the codebase, and suggestions for how to remediate them. If the finding includes a code change, CodeGuru Security highlights the vulnerable lines of code to remove and suggests inline code fixes as replacements. For more information, see [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
+CodeGuru Security conducts security scans on the external package repositories to detect vulnerabilities and return findings. These findings include details about security issues in the external package repository code, the locations of the vulnerabilities in the codebase, and suggestions for remediation. If findins require code changes, CodeGuru Security highlights the vulnerable lines of code and suggests inline fixes. For more information, refer to [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
 
-The CodeGuru Security Dashboard provides metrics to track the security posture of your external package repositories, including open critical findings, severity distribution of findings, and trends over time for each resource. CodeGuru Security tracks the vulnerabilities and trends across multiple revisions of the same resource using the scan name provided when a scan is created:
+The CodeGuru Security Dashboard offers metrics to monitor the security posture of external package repositories, including open critical findings, severity distribution of findings, and trends over time for each resource. CodeGuru Security tracks the vulnerabilities and trends across multiple revisions of the same resource using the scan name provided during scan creation:
 
 <p align="center">
   <img src="assets/images/codeguru-security-scan-xgboost.svg"><br>
@@ -430,9 +430,9 @@ The CodeGuru Security Dashboard provides metrics to track the security posture o
 
 ---
 
-The security test stage output is analyzed as part of the CodePipeline orchestration. If the security scans return severity findings greater than or equal to medium, then [CodeBuild stop build](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/codebuild/client/stop_build.html) is used to stop the build process, and an Amazon Simple Notification (SNS) topic is used to email the negative results to the requesting data scientist.
+As part of CodePipeline orchestration, the security test stage output is analyzed. If security scans detect findings of medium or higher severity, an SNS topic is used to email the finding details to the requesting data scientist.
 
-If the security scans return lower than medium severities, CodeBuild updates the private internal CodeArtifact (or GitHub) package repository with a new version of the InfoSec-approved external package and the SNS topic is used to email the positive results to the requesting data scientist.
+If the security scans return severities lower than medium, CodeBuild updates the private internal CodeArtifact (or GitHub) package repository with a new version of the InfoSec-approved external package. The SNS topic is used to email the new private package name and location for install to the requesting data scientist.
 
 <p align="center">
   <img src="assets/images/codepipeline-overview.svg"><br>
@@ -446,16 +446,16 @@ You can view the packages published to the CodeArtifact private internal package
   <span style="display: block; text-align: center;"><em>Figure 13: AWS CodeArtifact Console</em></span>
 </p>
 
-Then download the CodeArtifact private internal package version asset using the [_aws codeartifact get-package-version-asset_ CLI command](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/codeartifact/get-package-version-asset.html).
+Then download the CodeArtifact private internal package version asset using the [_aws codeartifact get-package-version-asset_](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/codeartifact/get-package-version-asset.html) CLI command.
 
 <p align="center">
   <img src="assets/images/studio-package-download.png"><br>
   <span style="display: block; text-align: center;"><em>Figure 14: AWS CodeArtifact Private Package Version Asset Download</em></span>
 </p>
 
-### Use InfoSec-Approved Private Internal Package Repository with SageMaker Studio Notebook
+### Utilizing InfoSec-Approved Private Internal Package Repository with SageMaker Studio Notebook
 
-Assuming the data scientist's external package repository has been approved by InfoSec, users can use their SageMaker Studio Notebook to download the approved external packages using the newly-created private internal repository package - Please see [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
+Assuming the data scientist's external package repositories have InfoSec approval, users can use their SageMaker Studio Notebook to download the approved external packages using the newly-created private internal repository package. Please refer to [Download package version assets](https://docs.aws.amazon.com/codeartifact/latest/ug/download-assets.html) from the AWS CodeArtifact User Guide:
 
 ```sh
 aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
@@ -465,48 +465,44 @@ aws codeartifact get-package-version-asset --domain <YOUR-CODEARTIFACT-DOMAIN> \
 
 ## Next Steps
 
-This Guidance provided a functional overview of a solution that orchestrates the intake and security scanning of external package repositories before they are used in data scientists’ notebooks. With a strong security mindset early in their development processes, data scientists are now free to implement their solutions without worrying that a pre-production security scan will restart their development lifecycle. This solution empowers data scientists to take ownership of security by “shifting left” the feedback and accountability for secure open-source library selection to the data scientists. Now, in a story of collaboration rather than competing priorities, data science and InfoSec teams are taking measures to mitigate known threats and prevent future risks from being introduced through code supply chain. 
+This Guidance provided a functional overview of a solution that orchestrates the intake and security scanning of external package repositories before their use in data scientists’ notebooks. With a strong security mindset early in their development processes, data scientists are now free to implement their solutions without concerns of a pre-production security scan restarting their development lifecycle. This solution empowers data scientists to take ownership of security by “shifting left” the feedback and accountability for secure open-source library selection to them. Now, in a story of collaboration rather than competing priorities, data science and InfoSec teams are mitigating known threats and preventing future risks from being introduced through code supply chain. 
 
 To test and validate the solution in your own secure data science environment, deploy the solution from this source code GitHub repository into your AWS account and experiment with your own SageMaker Studio Notebooks and other developer workflows.
 
 ## Clean Up
 
-You must clean up provisioned resources to avoid charges in your AWS account.
+To avoid charges in your AWS account, clean up provisioned resources.
 
 ### Step 1: Revoke GitHub Personal Access Token
 
-GitHub PATs are configured with an expiration value. If you want to ensure that your PAT cannot be used for programmatic access to your private internal GitHub repository before it reaches its expiry, you can revoke the PAT by following [GitHub's instructions](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/reviewing-and-revoking-personal-access-tokens-in-your-organization).
+GitHub PATs are configured with an expiration value. To prevent your PAT from being used for programmatic access to your private internal GitHub repository before it reaches its expiry, revoke the PAT by following [GitHub's instructions](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/reviewing-and-revoking-personal-access-tokens-in-your-organization).
 
-### Step 2: Clean Up SageMaker Studio MLOps Projects
+### Step 2: Clean Up AWS SageMaker Studio MLOps Projects
 
-SageMaker Studio projects and corresponding S3 buckets with project and pipeline artifacts will incur a cost in your AWS account. To delete your SageMaker Studio Domain and corresponding applications, notebooks, and data, please following the instructions in the [SageMaker Developer Guide](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-studio-delete-domain.html).
+AWS SageMaker Studio projects and corresponding Amazon S3 buckets with project and pipeline artifacts will incur a cost in your AWS account. To delete your SageMaker Studio Domain and corresponding applications, notebooks, and data, following the instructions in the [SageMaker Developer Guide](https://docs.aws.amazon.com/sagemaker/latest/dg/gs-studio-delete-domain.html).
 
 ### Step 3: Delete `external-repo-codeartifact.yaml` CloudFormation Stack
 If you used CodeArtifact as your private internal package repository, use ```./delete-codeartifact-stack.sh``` to delete your solution stack.
 If you used GitHub as your private internal package repository, use ```./delete-github-stack.sh``` to delete your solution stack.
 
-The above shell command needs to be run from the same working directory in which you deployed the solution stack so that it can reference the appropriate environment variables that were set as part of the solution deployment script.
-
-The shell command runs the following AWS CLI commands to delete the solution stack:
-
-#### Clean Up Automation Script
+The preceding ```source ./delete-codeartifact-stack.sh``` shell command needs to be run from the same working directory in which you deployed the solution stack so that it can reference the appropriate environment variables set during the solution deployment. The shell script runs the following AWS CLI commands to delete the solution stack:
 
 ```sh
-# cd guidance-for-secure-access-to-external-package-repositories-on-aws/shell/
-# chmod u+x delete-codeartifact-stack.sh
-# ./delete-codeartifact-stack.sh
-
-echo "Deleting CloudFormation Stack: $STACK_NAME"
-echo "Deleting Secrets Manager Secret: $GITHUB_TOKEN_SECRET_NAME"
 echo "Emptying and Deleting S3 Bucket: $S3_ARTIFACT_BUCKET_NAME"
-
 aws s3 rm s3://${S3_ARTIFACT_BUCKET_NAME} --recursive
 aws s3 rb s3://${S3_ARTIFACT_BUCKET_NAME}
 
+SECURITY_GROUP_ID=$(aws cloudformation describe-stack-resources --stack-name $STACK_NAME --logical-resource-id CodeBuildSecurityGroup --query "StackResources[0].PhysicalResourceId" --output text)
+echo "Deleting Security Group ID: $SECURITY_GROUP_ID"
+aws ec2 delete-security-group --group-id $SECURITY_GROUP_ID
+
+echo "Deleting CloudFormation Stack: $STACK_NAME"
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
 
+echo "Deleting Secrets Manager Secret: $GITHUB_TOKEN_SECRET_NAME"
 aws secretsmanager delete-secret --secret-id $GITHUB_TOKEN_SECRET_NAME
+
 ```
 
 ## Disclaimer
