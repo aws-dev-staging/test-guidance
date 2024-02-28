@@ -51,7 +51,7 @@ Data scientists pull the current version of the [external-package-request.csv](e
 </p>
 
 **2, 3 – External Package Repository Ingest**  
-The CodePipeline _Pull_Internal_Repository_ source action runs based on the external package request file check-in to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a [GitHub personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (PAT) stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the external-package-request.csv file, identifies the external package repository to ingest, and then fetches the remote repository zip URL using _curl_. The remote external package repository is stored as a build stage output artifact in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3), encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS), and later used as the input artifact for the security test stage.
+The CodePipeline _Pull_Internal_Repository_ source action runs based on the external package request file check-in to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a [GitHub personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (PAT) stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). The subsequent _Download_External_Repository_ build stage consists of an AWS CodeBuild project that parses the external-package-request.csv file, identifies the external package repository to ingest, and then fetches the remote repository Zip URL using _curl_. The remote external package repository is stored as a build stage output artifact in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3), encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS), and later used as the input artifact for the security test stage.
 
 **4 – Infrastructure Security**  
 Centralized Internet egress occurs through a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) (NGW) attached to the egress [Virtual Private Cloud](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/vpc-tkv.html) (VPC) in the Customer Networking Account, reducing costs associated with a distributed model where NGWs are deployed in every spoke VPC. The [Elastic IP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html) (EIP) of the NGW provides customers with a single IP address that they can include in their firewall ruleset or allow-list for egress from their private internal network.
@@ -61,16 +61,6 @@ A CodeBuild project runs [CodeGuru Security security scans](https://docs.aws.ama
 
 **6, 7 – Security Results and Private Internal Package Repository Management**  
 If the security scans return findings with severities lower than medium, the _Security_Scan_Notify_ stage publishes a new 'Latest' package version to the private internal AWS CodeArtifact package repository that was created during the initial solution deployment. However, if any of the finding severities are medium or higher, no private package version is published to CodeArtifact, and instead, Amazon CodeGuru Security findings are shared for further review. In either case, an [Amazon Simple Notification Service](https://docs.aws.amazon.com/sns/latest/dg/welcome.html) (SNS) topic is used to email the results to the requesting data scientist.
-
-<p align="center">
-  <img src="assets/images/sns-email-codeartifact.png"><br>
-  <span style="display: block; text-align: center;"><em>Figure 3: Amazon SNS Email for AWS CodeArtifact Private Package Name (InfoSec-Approved)</em></span>
-</p>
-
-<p align="center">
-  <img src="assets/images/sns-email-xgboost-findings.png"><br>
-  <span style="display: block; text-align: center;"><em>Figure 4: Amazon SNS Email with Amazon CodeGuru Security Findings (InfoSec-Refused)</em></span>
-</p>
 
 **8, 9 – MLOps Workflow**  
 Data scientists authenticate to their [Amazon SageMaker Studio](https://docs.aws.amazon.com/sagemaker/latest/dg/studio.html) domain using [AWS Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) or [Identity and Access Management](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam.html) (IAM) mode. Each auth-mode maps to the user profile’s associated execution role that defines the user’s maximum permissible notebook actions. SageMaker Studio runs on an environment managed by AWS. Studio provides an [elastic network interface](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html) (ENI) that can be deployed into a customer-managed VPC for more granular control of notebook traffic. Data scientists run their SageMaker Studio Notebook, which installs the InfoSec-approved external packages using the 'Latest' CodeArtifact private package version asset:
@@ -214,7 +204,7 @@ The following workflow diagram illustrates the end-to-end deployment process out
 
 <p align="center">
   <img src="assets/images/deployment-workflow.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 5: Solution Deployment Workflow</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 3: Solution Deployment Workflow</em></span>
 </p>
 
 ### Fork and Clone the Repository
@@ -242,7 +232,7 @@ Your private internal repository, containing [external-package-request.csv](exte
   
 <p align="center">
   <img src="assets/images/github-repo-config.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 6: Private Internal Repository Configuration</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 4: Private Internal Repository Configuration</em></span>
 </p>
 
 ❗ If you are also using GitHub as your private internal package repository, the CloudFormation template, [github-private-repo.yaml.yaml](cfn/github-private-repo.yaml), is used for deploying the solution and requires the private internal GitHub repository URL as an additional parameter.
@@ -285,13 +275,13 @@ export PRIVATE_GITHUB_OWNER=<YOUR-PRIVATE-REPOSITORY-OWNER>
 export PRIVATE_GITHUB_REPO=<YOUR-PRIVATE-REPOSITORY-NAME>
 
 # Below parameter values acquired from 'Configure VPC Networking' pre-deployment
-export CODEBUILD_VPC_ID=<YOUR-VPC-ID>
-export CODEBUILD_SUBNET_ID1=<YOUR-PRIVATE-SUBNET-ID-1>
-export CODEBUILD_SUBNET_ID2=<YOUR-PRIVATE-SUBNET-ID-2>
+export CODESERVICES_VPC_ID=<YOUR-VPC-ID>
+export CODESERVICES_SUBNET_ID1=<YOUR-PRIVATE-SUBNET-ID-1>
+export CODESERVICES_SUBNET_ID2=<YOUR-PRIVATE-SUBNET-ID-2>
 
 # (OPTIONAL) Only required with GitHub private package repository, not CodeArtifact
-export GITHUB_USER=<YOUR-GITHUB-USERNAME>
-export GITHUB_EMAIL=<YOUR-GITHUB-EMAIL>
+export PRIVATE_GITHUB_USER=<YOUR-GITHUB-USERNAME>
+export PRIVATE_GITHUB_EMAIL=<YOUR-GITHUB-EMAIL>
 export PRIVATE_GITHUB_URL=<YOUR-PRIVATE-PACKAGE-REPOSITORY-URL>
 ```
 
@@ -352,7 +342,7 @@ We are using a token-based webhook to establish a connection from the private in
 
 With your webhook in place, you are prepared to deploy and launch your SageMaker Studio environment. From there, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repositories to the request file, then push the updated request file back to the private internal repository. This action triggers CodePipeline execution, enalbing scanning of the external package repository for InfoSec approval before making it available as a private internal package.
 
-### Deploy and Launch Amazon SageMaker Studio
+### Deploy Amazon SageMaker Studio
 
 This section provides an overview of utilizing SageMaker Studio's system terminal to pull, edit, and push file copies between local and remote repositories. Alternatively, you can run your git commands from your local system terminal or another notebook environment.
 
@@ -364,10 +354,10 @@ SageMaker Studio Notebooks allow direct Internet access by default, however, thi
 
 <p align="center">
   <img src="assets/images/sagemaker-studio-vpc-only.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 7: SageMaker Studio Private Networking Architecture</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 5: SageMaker Studio Private Networking Architecture</em></span>
 </p>
 
-#### Launch Amazon SageMaker Studio
+### Launch Amazon SageMaker Studio
 
 Once Studio is deployed, navigate to the [SageMaker console](https://console.aws.amazon.com/sagemaker/home?#/dashboard), select **Domains** from the menu on the left, then choose your domain.
 
@@ -375,18 +365,25 @@ Under **User profiles**, select your desired user profile, then choose **Studio*
 
 <p align="center">
   <img src="assets/images/studio-console.svg" width="70%" height="70%"><br>
-  <span style="display: block; text-align: center;"><em>Figure 8: SageMaker Studio Console</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 6: SageMaker Studio Console</em></span>
 </p>
 
-### Push Updated External Package Request File to Private Internal Repository
+### Initiate Security Review for External Package Submissions
 
 With your GitHub webhook in place, data scientists operating in SageMaker Studio can pull the current version of the external package request file from the private internal GitHub repository, append desired external package repositories to the request file, then push the updated request file back to the private internal repository.
+
+Retrieve the Zip URL of the external package repository:
+
+<p align="center">
+  <img src="assets/images/external-package-repo-zip-url.png"><br>
+  <span style="display: block; text-align: center;"><em>Figure 7: External Package Repository Zip URL</em></span>
+</p>
 
 In the SageMaker Studio IDE, open your system terminal:
 
 <p align="center">
   <img src="assets/images/studio-terminal.png"><br>
-  <span style="display: block; text-align: center;"><em>Figure 9: SageMaker Studio JupyterLab Terminal</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 8: SageMaker Studio JupyterLab Terminal</em></span>
 </p>
 
 To clone your private internal GitHub repository and update the external package request file, run the following commands in your terminal:
@@ -401,8 +398,8 @@ git clone <YOUR-FORKED-REPOSITORY-URL>
 cd <local-repo-name>
 git checkout <branch>
 vi external-package-request.csv
-# Append your external package name and zip URL to external-package-request-file.csv # ex: scikit-learn,https://github.com/scikit-learn/scikit-learn/archive/refs/heads/main.zip
-# For more information on locating an external package repository's ZIP URL. please see https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives
+# Append your external package name and Zip URL to external-package-request-file.csv 
+# Example: scikit-learn,https://github.com/scikit-learn/scikit-learn/archive/refs/heads/main.zip
 git add external-package-request.csv
 git commit -m "Add <PACKAGE-NAME>"
 git push -u
@@ -416,7 +413,7 @@ CodePipeline is configured with a source action triggered by the data scientist'
 
 <p align="center">
   <img src="assets/images/pipeline-execution.png" width="340" height="875"><br>
-  <span style="display: block; text-align: center;"><em>Figure 10: CodePipeline Execution Status</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 9: CodePipeline Execution Status</em></span>
 </p>
 
 CodeGuru Security conducts security scans on the external package repositories to detect vulnerabilities and return findings. These findings include details about security issues in the external package repository code, the locations of the vulnerabilities in the codebase, and suggestions for remediation. If findins require code changes, CodeGuru Security highlights the vulnerable lines of code and suggests inline fixes. For more information, refer to [Working with findings](https://docs.aws.amazon.com/codeguru/latest/security-ug/working-with-findings.html).
@@ -425,7 +422,7 @@ The CodeGuru Security Dashboard offers metrics to monitor the security posture o
 
 <p align="center">
   <img src="assets/images/codeguru-security-scan-xgboost.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 11: Amazon CodeGuru Security - Security Scan Findings</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 10: Amazon CodeGuru Security - Security Scan Findings</em></span>
 </p>
 
 ---
@@ -436,21 +433,31 @@ If the security scans return severities lower than medium, CodeBuild updates the
 
 <p align="center">
   <img src="assets/images/codepipeline-overview.svg"><br>
-  <span style="display: block; text-align: center;"><em>Figure 12: AWS CodePipeline Private Package Publishing Workflow</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 11: AWS CodePipeline Private Package Publishing Workflow</em></span>
+</p>
+
+<p align="center">
+  <img src="assets/images/sns-email-codeartifact.png"><br>
+  <span style="display: block; text-align: center;"><em>Figure 12: Amazon SNS Email for AWS CodeArtifact Private Package Name (InfoSec-Approved)</em></span>
+</p>
+
+<p align="center">
+  <img src="assets/images/codeguru-sns-findings-email.png"><br>
+  <span style="display: block; text-align: center;"><em>Figure 13: Amazon SNS Email with Amazon CodeGuru Security Findings (InfoSec-Refused)</em></span>
 </p>
 
 You can view the packages published to the CodeArtifact private internal package repository by navigating to the [AWS CodeArtifact Console](https://us-east-1.console.aws.amazon.com/codesuite/codeartifact/start?region=us-east-1):
 
 <p align="center">
   <img src="assets/images/codeartifact-package.png"><br>
-  <span style="display: block; text-align: center;"><em>Figure 13: AWS CodeArtifact Console</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 14: AWS CodeArtifact Console</em></span>
 </p>
 
 Then download the CodeArtifact private internal package version asset using the [_aws codeartifact get-package-version-asset_](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/codeartifact/get-package-version-asset.html) CLI command.
 
 <p align="center">
   <img src="assets/images/studio-package-download.png"><br>
-  <span style="display: block; text-align: center;"><em>Figure 14: AWS CodeArtifact Private Package Version Asset Download</em></span>
+  <span style="display: block; text-align: center;"><em>Figure 15: AWS CodeArtifact Private Package Version Asset Download</em></span>
 </p>
 
 ### Utilizing InfoSec-Approved Private Internal Package Repository with SageMaker Studio Notebook
