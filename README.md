@@ -137,8 +137,8 @@ Estimated monthly cost: $0
 **Amazon Simple Notification Service ([Pricing](https://aws.amazon.com/sns/pricing/)):**
 > - Assuming 30,0000 notifcation deliveries for each pipeline execution per month.
 > - Free tier includes:
-  > - One million publishes per month for the first 12 months, starting from the date of sign-up.
-  > - 100,000 HTTP/HTTPS deliveries, email deliveries, email deliveries to Amazon SES and Amazon Pinpoint, and SMS deliveries per month for the first 12 months.
+  >> - One million publishes per month for the first 12 months, starting from the date of sign-up.
+  >> - 100,000 HTTP/HTTPS deliveries, email deliveries, email deliveries to Amazon SES and Amazon Pinpoint, and SMS deliveries per month for the first 12 months.
 
 Estimated monthly cost: $0
 
