@@ -1,16 +1,20 @@
-# cd sagemaker-external-repository-security/shell/
+# cd guidance-for-secure-access-to-external-package-repositories-on-aws/shell/
 # chmod u+x delete-github-stack.sh
 # ./delete-github-stack.sh
 
-echo $STACK_NAME
-echo $GITHUB_TOKEN_SECRET_NAME
-echo $S3_ARTIFACT_BUCKET_NAME
+echo "Emptying and Deleting S3 Bucket: $S3_ARTIFACTS_BUCKET_NAME"
+aws s3 rm s3://${S3_ARTIFACTS_BUCKET_NAME} --recursive
+aws s3 rb s3://${S3_ARTIFACTS_BUCKET_NAME}
 
-aws s3 rm s3://${S3_ARTIFACT_BUCKET_NAME} --recursive
-aws s3 rb s3://${S3_ARTIFACT_BUCKET_NAME}
+SECURITY_GROUP_ID=$(aws cloudformation describe-stack-resources --stack-name $STACK_NAME --logical-resource-id CodeBuildSecurityGroup --query "StackResources[0].PhysicalResourceId" --output text)
+echo "Deleting Security Group ID: $SECURITY_GROUP_ID"
+aws ec2 delete-security-group --group-id $SECURITY_GROUP_ID
 
+echo "Deleting CloudFormation Stack: $STACK_NAME"
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
 
+echo "Deleting Secrets Manager Secret: $GITHUB_TOKEN_SECRET_NAME"
+echo "Deleting Secrets Manager Secret: $GITHUB_EMAIL_SECRET_NAME"
 aws secretsmanager delete-secret --secret-id $GITHUB_TOKEN_SECRET_NAME
 aws secretsmanager delete-secret --secret-id $GITHUB_EMAIL_SECRET_NAME
