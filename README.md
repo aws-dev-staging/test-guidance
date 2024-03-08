@@ -1,4 +1,4 @@
-[# Guidance for Secure Access to External Package Repositories on AWS
+# Guidance for Secure Access to External Package Repositories on AWS
 
 
 ## Table of Contents
@@ -519,4 +519,5 @@ aws secretsmanager delete-secret --secret-id $GITHUB_TOKEN_SECRET_NAME
 ## Authors
 
 Kyle T. Blocksom, AWS Sr. Solutions Architect
+](https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws)https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws
 ](https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws)https://github.com/aws-solutions-library-samples/guidance-for-secure-access-to-external-package-repositories-on-aws
