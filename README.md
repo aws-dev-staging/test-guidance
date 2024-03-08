@@ -97,20 +97,20 @@ Estimated monthly cost: $0.005 build/minute × 2900 minutes = $14.50
   > - Free tier includes 5GB of standard storage.
   > - Additional storage needed: 95GB.
   > - Standard storage pricing for Amazon S3 outside of the free tier is typically $0.023 per GB-month for the first 50TB tier.  
-
-Estimated monthly cost for 95GB storage: $0.023/GB-month * 95GB = $2.185
-
+>
+> Estimated monthly cost for 95GB storage: $0.023/GB-month * 95GB = $2.185
+>
 > Data Transfer Out: N/A
-
+>
 > Requests: 
   > - Assuming minimal requests, estimate 10,000 requests per month.
   > - Free tier includes 20,000 GET requests and 2000 PUT, COPY, POST, or LIST requests per month.
   > - Additional requests needed: 8000.
   > - Request pricing varies depending on the type of request and region. For standard Amazon S3 requests, it is typically around $0.005 per 1000 requests.
+>
+> Estimated monthly cost for 8000 requests: $0.005 per 1000 requests * (8000 requests / 1,000) = $0.04
 
-Estimated monthly cost for 8000 requests: $0.005 per 1000 requests * (8000 requests / 1,000) = $0.04
-
-Estimated total monthly cost: $2.185 + $0.04 = $2.225
+Estimated monthly cost: $2.185 + $0.04 = $2.225
 
 **AWS CodeArtifact ([Pricing](https://aws.amazon.com/codeartifact/pricing/)):**
 > Storage: 
@@ -118,16 +118,16 @@ Estimated total monthly cost: $2.185 + $0.04 = $2.225
   > - Free tier includes 2GB of storage every month.
   > - Additional storage needed: 48GB.
   > - Cost per GB / Month: $0.05 per GB. 
-
-Estimated monthly cost for 48GB storage: $0.05 per GB * 48GB = $2.40
-
+> 
+> Estimated monthly cost for 48GB storage: $0.05 per GB * 48GB = $2.40
+> 
 > Data Transfer Out: N/A
-
+>
 > Requests: 
   > - Assuming minimal requests, estimate 10,000 requests per month.
   > - Free tier includes first 100,000 requests every month.
 
-Estimated total monthly cost: $2.40
+Estimated monthly cost: $2.40
 
 **Amazon CodeGuru Security ([Pricing](https://aws.amazon.com/codeguru/pricing/)):**
 > - As of February 2024, CodeGuru Security is available for free in public preview.
@@ -136,7 +136,7 @@ Estimated monthly cost: $0
 
 **Amazon Simple Notification Service ([Pricing](https://aws.amazon.com/sns/pricing/)):**
 > - Assuming 30,0000 notifcation deliveries for each pipeline execution per month.
->   Free tier includes:
+> - Free tier includes:
 >   - One million publishes per month for the first 12 months, starting from the date of sign-up.
 >   - 100,000 HTTP/HTTPS deliveries, email deliveries, email deliveries to Amazon SES and Amazon Pinpoint, and SMS deliveries per month for the first 12 months.
 
