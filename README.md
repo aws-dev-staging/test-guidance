@@ -52,7 +52,7 @@ The workflow consists of the following steps:
 Data scientists pull the current version of the [external-package-request.csv](external-package-request.csv) file from the private internal GitHub repository, append desired additional external package repositories to the request file, then push the updated request file back to the private internal repository.
 
 **2, 3 – External Package Ingest**  
-AWS CodePipeline orchestration is triggered by a token-authenticated webhook linked to the private internal GitHub repository containing the external package request file. Within the pipeline, an AWS CodeBuild project is utilized to download the external package repositories. 
+AWS CodePipeline orchestration is triggered by a token-authenticated webhook linked to the private internal GitHub repository containing the external package request file. Within the pipeline, an AWS CodeBuild project is utilized to download the external package repositories. Downloaded files are stored as CodePipeline artifacts in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3).
 
 **4 – Infrastructure Security**  
 Centralized Internet egress occurs through a [NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html) (NGW) attached to the egress [Virtual Private Cloud](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/vpc-tkv.html) (VPC) in the Customer Networking Account, reducing costs associated with a distributed model where NGWs are deployed in every spoke VPC. The [Elastic IP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html) (EIP) of the NGW provides customers with a static IP address that they can include in their firewall ruleset or allow-list for private network egress.
@@ -68,19 +68,29 @@ Within their Amazon SageMaker Studio Notebooks, data scientists install InfoSec-
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of March 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) AWS Region is approximately $18.315 per month based on the following assumptions.
+You are responsible for the cost of the AWS services used while running this Guidance. As of March 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) AWS Region is approximately $19.575 per month based on the following assumptions.
 
 - Pipeline execution frequency - AWS CodePipeline execution occurs 100 times per day for external package scans.
 - Package size - Moderate-sized packages are being security scanned with an average AWS CodeBuild build time of 10 minutes.
 - Storage requirements - 100GB for AWS CodePipeline artifacts and 50GB for the AWS CodeArtifact private internal package repository.
 - Compute resources - Default compute configuration for AWS CodeBuild.
 
-**AWS CodePipeline ([Pricing](https://aws.amazon.com/codepipeline/pricing/)):**
-> - Number of active pipelines: 1
-> - Free tier includes 1 active pipeline per month.
-> - Each pipeline thereafter is $1 per month. 
+**AWS CodeArtifact ([Pricing](https://aws.amazon.com/codeartifact/pricing/)):**
+> Storage: 
+  > - 50GB for packages
+  > - Free tier includes 2GB of storage every month.
+  > - Additional storage needed: 48GB.
+  > - Cost per GB / Month: $0.05 per GB. 
+> 
+> Estimated monthly cost for 48GB storage: $0.05 per GB * 48GB = $2.40
+> 
+> Data Transfer Out: N/A
+>
+> Requests: 
+  > - Assuming minimal requests, estimate 10,000 requests per month.
+  > - Free tier includes first 100,000 requests every month.
 
-Estimated monthly cost: $0 
+Estimated monthly cost: $2.40
 
 **AWS CodeBuild ([Pricing](https://aws.amazon.com/codebuild/pricing/)):**
 > - Build duration per execution: 10 minutes
@@ -90,6 +100,18 @@ Estimated monthly cost: $0
 > - Cost per build minute, assuming default build environment: $0.005 
  
 Estimated monthly cost: $0.005 build/minute × 2900 minutes = $14.50
+
+**Amazon CodeGuru Security ([Pricing](https://aws.amazon.com/codeguru/pricing/)):**
+> - As of February 2024, CodeGuru Security is available for free in public preview.
+
+Estimated monthly cost: $0
+
+**AWS CodePipeline ([Pricing](https://aws.amazon.com/codepipeline/pricing/)):**
+> - Number of active pipelines: 1
+> - Free tier includes 1 active pipeline per month.
+> - Each pipeline thereafter is $1 per month. 
+
+Estimated monthly cost: $0 
 
 **Amazon S3 ([Pricing](https://aws.amazon.com/s3/pricing/)):**
 > Storage: 
@@ -112,28 +134,6 @@ Estimated monthly cost: $0.005 build/minute × 2900 minutes = $14.50
 
 Estimated monthly cost: $2.185 + $0.04 = $2.225
 
-**AWS CodeArtifact ([Pricing](https://aws.amazon.com/codeartifact/pricing/)):**
-> Storage: 
-  > - 50GB for packages
-  > - Free tier includes 2GB of storage every month.
-  > - Additional storage needed: 48GB.
-  > - Cost per GB / Month: $0.05 per GB. 
-> 
-> Estimated monthly cost for 48GB storage: $0.05 per GB * 48GB = $2.40
-> 
-> Data Transfer Out: N/A
->
-> Requests: 
-  > - Assuming minimal requests, estimate 10,000 requests per month.
-  > - Free tier includes first 100,000 requests every month.
-
-Estimated monthly cost: $2.40
-
-**Amazon CodeGuru Security ([Pricing](https://aws.amazon.com/codeguru/pricing/)):**
-> - As of February 2024, CodeGuru Security is available for free in public preview.
-
-Estimated monthly cost: $0
-
 **Amazon Simple Notification Service ([Pricing](https://aws.amazon.com/sns/pricing/)):**
 > - Assuming 30,0000 notifcation deliveries for each pipeline execution per month.
 > - Free tier includes:
@@ -144,8 +144,10 @@ Estimated monthly cost: $0
 
 **AWS Secrets Manager ([Pricing](https://aws.amazon.com/secrets-manager/pricing/)):**
 > - Number of Secrets Stored: 1 (personal access token)
+> - $0.40 per secret per month.
+> - $0.05 per 10,000 API calls.
 
-Estimated monthly cost: $0
+Estimated monthly cost: $0.40 + $0.05 = $0.45
 
 Please note that the actual cost will depend on factors such as the frequency of pipeline executions, the size, complexity, and number of packages being scanned, and the amount of data stored in Amazon S3 and AWS CodeArtifact.
 
@@ -432,7 +434,7 @@ The AWS CodePipeline 'Pull_Internal_Repository' source action runs based on the 
 
 The subsequent 'Download_Scan_Notify_External_Repositories' build stage consists of an AWS CodeBuild project that runs the [codeartifact-codeguru-security-scan.py](codeartifact-codeguru-security-scan.py) Python script to parse the external-package-request.csv file, identify the external package repositories to ingest, and then download the external repositories using their Zip URLs.
 
-The external package repository files are stored as AWS CodePipeline artifacts in [Amazon Simple Storage Service](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (S3), encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS).
+The external package repository files are stored as AWS CodePipeline artifacts in S3, encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS).
 
 You can monitor CodePipeline's execution status from the [CodePipeline console](https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-view-console.html#pipelines-executions-status-console):
 
