@@ -233,7 +233,7 @@ To authenticate with your private internal GitHub repository, generate a [person
 
 ### Collect Private Internal Source Code Repository Configuration
 
-Your private internal GitHub repository, containing the [external-package-request.csv](external-package-request.csv) and [codeguru-security-scan.py](codeguru-security-scan.py) files, serves as the source code repository. The repository's webhook triggers the CodePipeline source action with each new commit. Navigate to your private internal repository and note the following, which are required parameters in the Deploy AWS CloudFormation Stack section:
+Your private internal GitHub repository serves as the source code repository and houses the [external-package-request.csv](external-package-request.csv) file. Additionally, it contains one of two files depending on the users private package repository: the [codeartifact-codeguru-security-scan.py](codeartifact-codeguru-security-scan.py) file for AWS CodeArtifact users or the [github-codeguru-security-scan.py](github-codeguru-security-scan.py) for GitHub users. The repository's webhook triggers the CodePipeline source action with each new commit. Navigate to your private internal repository and note the following, which are required parameters in the Deploy AWS CloudFormation Stack section:
 - Branch
 - Owner
 - Name
@@ -345,7 +345,7 @@ Upon successful stack deployment, the status transitions from `CREATE_IN_PROGRES
 
 ## Running the Guidance
 
-We are using a token-based webhook to establish a connection from the private internal GitHub repository, containing the external-package-request.csv and codeguru-security-scan.py files, to CodePipeline. This webhook ensures that POST requests sent to the payload URL originate from your private internal repository. With token authentication configured, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
+We are using a token-based webhook to establish a connection from the private internal GitHub source code repository to CodePipeline. This webhook ensures that POST requests sent to the payload URL originate from your private internal repository. With token authentication configured, you will receive the X-Hub-Signature and X-Hub-Signature-256 headers in the webhook POST request.
 
 With your webhook in place, you are prepared to deploy and launch your SageMaker Studio environment. From there, you will pull the current version of the external-package-request.csv file from your private internal GitHub repository, append the desired additional external package repositories to the request file, then push the updated request file back to the private internal repository. This action triggers CodePipeline execution, enabling scanning of the external package repository for InfoSec approval before making it available as a private internal package.
 
@@ -432,7 +432,7 @@ The updated external package request file should resemble the following:
 
 The AWS CodePipeline 'Pull_Internal_Repository' source action runs based on the data scientist's commit of the updated external package request file to the private internal GitHub repository, which triggers AWS CodePipeline execution through a webhook secured by a GitHub PAT stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html). 
 
-The subsequent 'Download_Scan_Notify_External_Repositories' build stage consists of an AWS CodeBuild project that runs the [codeartifact-codeguru-security-scan.py](codeartifact-codeguru-security-scan.py) Python script to parse the external-package-request.csv file, identify the external package repositories to ingest, and then download the external repositories using their Zip URLs.
+The subsequent 'Download_Scan_Notify_External_Repositories' build stage consists of an AWS CodeBuild project that runs the codeartifact-codeguru-security-scan.py (or github-codeguru-security-scan.py) Python script to parse the external-package-request.csv file, identify the external package repositories to ingest, and then download the external repositories using their Zip URLs.
 
 The external package repository files are stored as AWS CodePipeline artifacts in S3, encrypted using [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (KMS).
 
