@@ -28,7 +28,7 @@ print("PrivateGitHubToken: ", github_pat_secret_name)
 print("AWS_REGION: ", region_name)
 
 # Method to push file to GitHub repo
-def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha=True):
+def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha, existing_file_sha):
     try:
         response = None
         headers = {
@@ -47,6 +47,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         }
 
         if include_sha:
+            print("Method SHA - " + str(existing_file_sha))
             data["sha"] = existing_file_sha
 
         response = requests.put(url, headers=headers, json=data)
@@ -238,12 +239,14 @@ def main():
                                                     if get_existing_file_response.status_code == 200:
                                                         existing_file_info = get_existing_file_response.json()
                                                         existing_file_sha = existing_file_info.get('sha')
+                                                        print("File SHA - " + str(existing_file_sha))
 
                                                         # Send the request to GitHub API
-                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message)
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, True, existing_file_sha)
                                                     elif get_existing_file_response.status_code == 404:
                                                         # If file not found, call put_file_to_github without SHA
-                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha=False)
+                                                        print("File Does Not Exist Yet - " + str(existing_file_sha))
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, existing_file_sha)
                                                     else:
                                                         print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                 else:
