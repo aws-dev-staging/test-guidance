@@ -28,7 +28,41 @@ print("PrivateGitHubEmail: ", github_email_secret_name)
 print("PrivateGitHubToken: ", github_pat_secret_name)
 print("AWS_REGION: ", region_name)
 
-# Function to fetch value from Secrets Manager
+# Method to push file to GitHub repo
+def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha=True):
+    try:
+        response = None
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {github_token}",
+            "X-GitHub-Api-Version": "2022-11-28"
+        }
+
+        data = {
+            "message": commit_message,
+            "committer": {
+                "name": github_username,
+                "email": github_email
+            },
+            "content": content_base64
+        }
+
+        if include_sha:
+            data["sha"] = existing_file_sha
+
+        response = requests.put(url, headers=headers, json=data)
+
+        if response.status_code == 200 or response.status_code == 201:
+            print(f"Private internal package pushed to GitHub successfully.")
+        else:
+            print(f"Failed to push file to GitHub. Status code: {response.status_code}")
+            print("Response content: ", response.text)
+    except Exception as error:
+        print(f"Failed to push file to GitHub due to an exception: {error}")
+    finally:
+        return response
+
+# Method to fetch value from Secrets Manager
 def get_secret(secret_id):
     session = boto3.session.Session()
     client = session.client(service_name='secretsmanager', region_name=region_name)
@@ -41,7 +75,7 @@ def get_secret(secret_id):
         print(f"Error fetching secret value from Secrets Manager: {e}")
         return None
 
-# Function to execute shell commands
+# Method to execute shell commands
 def run_command(command):
     try:
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -50,6 +84,7 @@ def run_command(command):
         print(f"Error executing command: {e}")
         return None
 
+# Method to format findings for SNS email readability
 def format_findings(findings):
     formatted_message = ""
     for index, finding in enumerate(findings, start=1):
@@ -69,6 +104,7 @@ def format_findings(findings):
         
     return formatted_message
 
+# Method to adjust package name
 def sanitize_package_name(name):
     return re.sub(r'[^a-zA-Z0-9-_$:.]', '', name)
 
@@ -173,7 +209,6 @@ def main():
                                         print(f"github_email = {github_email}")
 
                                         for approved_package in approved_packages:
-
                                             try:
                                                 if github_token:
                                                     print("GitHub token found. Attempting to push package to GitHub repository...")
@@ -187,7 +222,7 @@ def main():
                                                     content_base64 = base64.b64encode(content).decode('utf-8')
 
                                                     # GitHub repository details
-                                                    commit_message = "Add " +  zip_file_name # Commit message
+                                                    commit_message = "Add private package - " +  zip_file_name # Commit message
                                                     branch = "main"  # Branch where you want to push the file
                                                     url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/{zip_file_name}"
 
@@ -205,30 +240,10 @@ def main():
                                                         existing_file_sha = existing_file_info.get('sha')
 
                                                         # Send the request to GitHub API
-                                                        response = requests.put(
-                                                            url,
-                                                            headers={
-                                                                "Accept": "application/vnd.github+json",
-                                                                "Authorization": f"Bearer {github_token}",
-                                                                "X-GitHub-Api-Version": "2022-11-28"
-                                                            },
-                                                            json={
-                                                                "message": commit_message,
-                                                                "committer": {
-                                                                    "name": github_username,
-                                                                    "email": github_email
-                                                                },
-                                                                "content": content_base64,
-                                                                "sha": existing_file_sha  # Include SHA hash in the request
-                                                            }
-                                                        )
-
-                                                        # Check the response status
-                                                        if response.status_code == 200 or response.status_code == 201:
-                                                            print(f"Private internal package, {approved_package}, pushed to GitHub successfully.")
-                                                        else:
-                                                            print(f"Failed to push file to GitHub. Status code: {response.status_code}")
-                                                            print("Response content: ", response.text)
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message)
+                                                    elif get_existing_file_response.status_code == 404:
+                                                        # If file not found, call put_file_to_github without SHA
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha=False)
                                                     else:
                                                         print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                 else:
