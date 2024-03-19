@@ -27,3 +27,4 @@ ParameterKey=CodeServicesSubnet,ParameterValue=${CODESERVICES_SUBNET_ID1}\\,${CO
 
 aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
+aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"

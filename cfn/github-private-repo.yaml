@@ -38,60 +38,60 @@ Metadata:
           - CodeServicesSubnet
     ParameterLabels:
       S3ArtifactsBucket:
-        default: S3 Bucket Containing Lambda Handler, Lambda Data Loader, and Lex Deployment Packages, along with Customer FAQ and Mortgage Application example documents.
+        default: Amazon S3 bucket to store AWS CodePipeline input and output artifacts
       CodePipelineName:
-        default: CodePipeline Name
+        default: AWS CodePipeline Name
       SNSEmail:
-        default: SNS Email
+        default: Amazon SNS Email
       PrivateGitHubBranch:
-        default: GitHub Branch
+        default: Private GitHub Source Code Repo Branch
       PrivateGitHubOwner:
-        default: GitHub Repo Owner
+        default: Private GitHub Source Code Repo Owner
       PrivateGitHubRepo:
-        default: GitHub Repo Name
+        default: Private GitHub Source Code Repo Name
       PrivateGitHubToken:
-        default: GitHub PAT Secrets Manager ARN
+        default: GitHub PAT AWS Secrets Manager Secret Name
       CodeServicesVpc:
-        default: CodePipeline and CodeBuild VPC
+        default: AWS CodePipeline and AWS CodeBuild VPC
       CodeServicesSubnet:
-        default: VPC-Attached CodeBuild and Lambda Subnets
+        default: VPC private subnet(s) for AWS CodePipeline and AWS CodeBuild
 
 Parameters:
   S3ArtifactsBucket:
-    Description: S3 Bucket Containing Lambda Handler, Lambda Data Loader, and Lex Deployment Packages, along with Customer FAQ and Mortgage Application example documents.
+    Description: Artifacts S3 bucket for CodePipeline.
     Type: String
     Default: <YOUR-S3-BUCKET-NAME>
   CodePipelineName:
-    Description: Name for CodePipeline.
+    Description: CodePipeline name.
     Type: String
     Default: external-package-pipeline
   SNSEmail:
-    Description: SNS Email.
+    Description: SNS email.
     Type: String
     Default: <YOUR-SNS-EMAIL>
   PrivateGitHubBranch:
-    Description: GitHub Branch to clone.
+    Description: GitHub branch to clone.
     Type: String
     Default: <YOUR-EXTERNAL-PACKAGE-BRANCH>
   PrivateGitHubOwner:
-    Description: GitHub owner for the cloned repository.
+    Description: Private GitHub source repo owner.
     Type: String
     Default: <YOUR-EXTERNAL-PACKAGE-OWNER>
   PrivateGitHubRepo:
-    Description: GitHub Repo to clone.   
+    Description: Private GitHub source repo name.   
     Type: String
     Default: <YOUR-EXTERNAL-PACKAGE-REPO>
   PrivateGitHubToken:
-    Description: GitHub PAT. 
+    Description: Private GitHub PAT secret name. 
     Type: String
     NoEcho: true
     Default: <YOUR-GITHUB-PAT-SECRET-NAME>
   CodeServicesVpc:
-    Description: CodePipeline and CodeBuild VPC
+    Description: CodeBuild and CodePipeline VPC.
     Type: 'AWS::EC2::VPC::Id'
     Default: <YOUR-VPC-ID>
   CodeServicesSubnet:
-    Description: Private subnet(s) for Git clone Lambda and CodeBuild deployment.
+    Description: Private subnet(s) for CodeBuild and CodePipeline deployment.
     Type: 'List<AWS::EC2::Subnet::Id>'
     Default: '<YOUR-PRIVATE-SUBNET-ID1>, <YOUR-PRIVATE-SUBNET-ID2>'
 
@@ -209,7 +209,7 @@ Resources:
                     "name": "SNSTopic",
                     "type": "PLAINTEXT",
                     "value": "${SNSTopic}"
-                  }]
+                  }]                  ]
               RunOrder: 1
 
 # GitHub Webhook to filter and push updates

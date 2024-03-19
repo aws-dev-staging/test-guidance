@@ -13,6 +13,7 @@ aws ec2 delete-security-group --group-id $SECURITY_GROUP_ID
 echo "Deleting CloudFormation Stack: $STACK_NAME"
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+echo "DELETE_COMPLETE"
 
 echo "Deleting Secrets Manager Secret: $GITHUB_TOKEN_SECRET_NAME"
 aws secretsmanager delete-secret --secret-id $GITHUB_TOKEN_SECRET_NAME

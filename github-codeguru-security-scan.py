@@ -1,8 +1,10 @@
 import os
 import re
 import csv
+import json
 import time
 import boto3
+import base64
 import requests
 import subprocess
 from datetime import datetime
@@ -10,22 +12,27 @@ from dateutil import tz
 
 # Environment Variables
 sns_topic_arn = os.environ.get("SNSTopic")
-github_token = os.environ.get("PrivateGitHubToken")  # GitHub personal access token
-github_repo = os.environ.get("PrivateGitHubRepo")  # GitHub repository name
+github_repo = os.environ.get("PrivateGitHubRepo")
+github_owner = os.environ.get("PrivateGitHubOwner")
+secret_name = os.environ.get("PrivateGitHubToken")
+region_name = os.environ.get("AWS_REGION")
+
+# Print environment variable values
+print("SNSTopic: ", sns_topic_arn)
+print("PrivateGitHubRepo: ", github_repo)
+print("PrivateGitHubOwner: ", github_owner)
+print("PrivateGitHubToken: ", secret_name)
+print("AWS_REGION: ", region_name)
 
 # Function to fetch GitHub personal access token from Secrets Manager
 def get_github_token():
-    secret_name = "YourSecretName"
-    region_name = "YourRegion"
-
     session = boto3.session.Session()
     client = session.client(service_name='secretsmanager', region_name=region_name)
 
     try:
         response = client.get_secret_value(SecretId=secret_name)
         secret = response['SecretString']
-        github_token = json.loads(secret)['github_token']
-        return github_token
+        return secret
     except Exception as e:
         print(f"Error fetching GitHub token from Secrets Manager: {e}")
         return None
@@ -65,10 +72,11 @@ def main():
     approved_packages = []
     
     try:
-        print("Initiating Security Scan for External Package Repositories")
-
         # Instantiate boto3 clients
         codeguru_security_client = boto3.client('codeguru-security')
+        codeartifact_client = boto3.client('codeartifact')
+        sns_client = boto3.client('sns')
+        codebuild_client = boto3.client('codebuild')
 
         # Read CSV file to get external package information
         with open('external-package-request.csv', newline='') as csvfile:
@@ -89,15 +97,7 @@ def main():
                     # Perform CodeGuru Security Scans
                     try:
                         print("Initiating Security Scan for External Package Repository: " + external_package_name)
-
-                        # Instantiate boto3 clients
-                        codeguru_security_client = boto3.client('codeguru-security')
-                        codeartifact_client = boto3.client('codeartifact')
-                        sns_client = boto3.client('sns')
-                        codebuild_client = boto3.client('codebuild')
-
                         print("Creating CodeGuru Security Upload URL...")
-
                         create_url_input = {"scanName": external_package_name}
                         create_url_response = codeguru_security_client.create_upload_url(**create_url_input)
                         url = create_url_response["s3Url"]
@@ -164,31 +164,71 @@ def main():
 
                                         # Fetch GitHub personal access token from Secrets Manager
                                         github_token = get_github_token()
-                                        headers = {"Authorization": f"token {github_token}"}
 
-                                        # Logic to push the package file to a GitHub repository           
                                         for approved_package in approved_packages:
-                                            if github_token:
-                                                # Configure Git with the retrieved token
-                                                run_command(f"git config --global user.name 'YourGitHubUsername'")
-                                                run_command(f"git config --global user.email 'your-email@example.com'")
-                                                run_command(f"git config --global credential.helper '!aws codebuild --profile YourAWSProfile secrets-manager get-secret-value --secret-id YourSecretId --query SecretString --output text | jq -r .github_token'")
 
-                                                # Add, commit, and push changes to GitHub repository
-                                                run_command("git add .")
-                                                run_command("git commit -m 'CodeBuild project update'")
-                                                run_command("git push origin master")  # Change 'master' to your branch name if needed
-                                            else:
-                                                print("GitHub personal access token not found in Secrets Manager.")
+                                            try:
+                                                if github_token:
+                                                    print("GitHub token found. Attempting to push package to GitHub repository...")
+                                                    zip_file_name = f"{approved_package}.zip"
 
-                                            zip_file_name = f"{approved_package}.zip"
-                                            files = {"file": open(zip_file_name, "rb")}
-                                            response = requests.post(f"https://api.github.com/repos/{github_repo}/contents/{zip_file_name}", headers=headers, files=files)
+                                                    # Load file content
+                                                    with open(zip_file_name, "rb") as file:
+                                                        content = file.read()
 
-                                            if response.status_code == 201:
-                                                print(f"Package file {approved_package} pushed to GitHub repository successfully.")
-                                            else:
-                                                print(f"Failed to push package file {approved_package} to GitHub repository with status code {response.status_code}.")
+                                                    # Encode content to base64
+                                                    content_base64 = base64.b64encode(content).decode('utf-8')
+
+                                                    # GitHub repository details
+                                                    commit_message = "Add " +  zip_file_name # Commit message
+                                                    branch = "main"  # Branch where you want to push the file
+                                                    url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/{zip_file_name}"
+
+                                                    # Query existing file SHA
+                                                    get_existing_file_response = requests.get(
+                                                        url,
+                                                        headers={
+                                                            "Accept": "application/vnd.github.v3+json",
+                                                            "Authorization": f"Bearer {github_token}"
+                                                        }
+                                                    )
+
+                                                    if get_existing_file_response.status_code == 200:
+                                                        existing_file_info = get_existing_file_response.json()
+                                                        existing_file_sha = existing_file_info.get('sha')
+
+                                                        # Send the request to GitHub API
+                                                        response = requests.put(
+                                                            url,
+                                                            headers={
+                                                                "Accept": "application/vnd.github+json",
+                                                                "Authorization": f"Bearer {github_token}",
+                                                                "X-GitHub-Api-Version": "2022-11-28"
+                                                            },
+                                                            json={
+                                                                "message": commit_message,
+                                                                "committer": {
+                                                                    "name": "Kyle Blocksom",
+                                                                    "email": "blocksomkyle@github.com"
+                                                                },
+                                                                "content": content_base64,
+                                                                "sha": existing_file_sha  # Include SHA hash in the request
+                                                            }
+                                                        )
+
+                                                        # Check the response status
+                                                        if response.status_code == 200 or response.status_code == 201:
+                                                            print(f"Private internal package, {approved_package}, pushed to GitHub successfully.")
+                                                        else:
+                                                            print(f"Failed to push file to GitHub. Status code: {response.status_code}")
+                                                            print("Response content: ", response.text)
+                                                    else:
+                                                        print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
+                                                else:
+                                                    print("GitHub personal access token not found in Secrets Manager.")
+                                            except Exception as error:
+                                                print(f"Action Failed for approved package {approved_package}, reason: {error}")
+
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         subject = external_package_name + " Medium to High Severity Findings"

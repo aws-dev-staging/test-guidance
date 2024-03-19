@@ -44,17 +44,17 @@ Metadata:
       SNSEmail:
         default: Amazon SNS Email
       PrivateGitHubBranch:
-        default: Private GitHub Branch
+        default: Private GitHub Source Code Repo Branch
       PrivateGitHubOwner:
-        default: Private GitHub Repo Owner
+        default: Private GitHub Source Code Repo Owner
       PrivateGitHubRepo:
-        default: Private GitHub Repo Name
+        default: Private GitHub Source Code Repo Name
       PrivateGitHubToken:
-        default: GitHub PAT AWS Secrets Manager Name
+        default: GitHub PAT AWS Secrets Manager Secret Name
       CodeServicesVpc:
         default: AWS CodePipeline and AWS CodeBuild VPC
       CodeServicesSubnet:
-        default: VPC private subnet(s) for AWS CodePipeline and AWS CodeBuild.
+        default: VPC private subnet(s) for AWS CodePipeline and AWS CodeBuild
 
 Parameters:
   S3ArtifactsBucket:
@@ -74,7 +74,7 @@ Parameters:
     Type: String
     Default: <YOUR-PRIVATE-GITHUB-BRANCH>
   PrivateGitHubOwner:
-    Description: Private GitHub Owner.
+    Description: Private GitHub Repo Owner.
     Type: String
     Default: <YOUR-EXTERNAL-PACKAGE-OWNER>
   PrivateGitHubRepo:
@@ -82,7 +82,7 @@ Parameters:
     Type: String
     Default: <YOUR-EXTERNAL-PACKAGE-REPO>
   PrivateGitHubToken:
-    Description: GitHub PAT AWS Secrets Manager Name.
+    Description: GitHub PAT AWS Secrets Manager Secret Name.
     Type: String
     NoEcho: true
     Default: <YOUR-GITHUB-PAT-SECRET-NAME>
