@@ -15,8 +15,13 @@ sns_topic_arn = os.environ.get("SNSTopic")
 github_repo = os.environ.get("PrivateGitHubRepo")
 github_owner = os.environ.get("PrivateGitHubOwner")
 github_username = os.environ.get("PrivateGitHubUsername")
+<<<<<<< Updated upstream
 github_email_secret_name = os.environ.get("PrivateGitHubEmail") # "guidance-github-dev-5-git-email"
 github_pat_secret_name = os.environ.get("PrivateGitHubToken") # "guidance-github-dev-5-git-pat"
+=======
+github_email = os.environ.get("PrivateGitHubEmail") # "guidance-github-dev-5-git-email"
+github_token = os.environ.get("PrivateGitHubToken") # "guidance-github-dev-5-git-pat"
+>>>>>>> Stashed changes
 region_name = os.environ.get("AWS_REGION")
 
 # Print environment variable values
@@ -24,9 +29,17 @@ print("SNSTopic: ", sns_topic_arn)
 print("PrivateGitHubRepo: ", github_repo)
 print("PrivateGitHubOwner: ", github_owner)
 print("PrivateGitHubUsername: ", github_username)
-print("PrivateGitHubEmail: ", github_email_secret_name)
-print("PrivateGitHubToken: ", github_pat_secret_name)
+print("PrivateGitHubEmail: ", github_email)
+print("PrivateGitHubToken: ", github_token)
 print("AWS_REGION: ", region_name)
+
+# Instantiate boto3 clients
+codeguru_security_client = boto3.client('codeguru-security')
+codeartifact_client = boto3.client('codeartifact')
+sns_client = boto3.client('sns')
+codebuild_client = boto3.client('codebuild')
+session = boto3.session.Session()
+secrets_manager_client = session.client(service_name='secretsmanager', region_name=region_name)
 
 # Method to push file to GitHub repo
 def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha, existing_file_sha):
@@ -62,20 +75,6 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         print(f"Failed to push file to GitHub due to an exception: {error}")
     finally:
         return response
-
-# Method to fetch value from Secrets Manager
-def get_secret(secret_id):
-    session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager', region_name=region_name)
-
-    try:
-        print("secret_id = " + secret_id)
-        response = client.get_secret_value(SecretId=secret_id)
-        secret = response['SecretString']
-        return secret
-    except Exception as e:
-        print(f"Error fetching secret value from Secrets Manager: {e}")
-        return None
 
 # Method to execute shell commands
 def run_command(command):
@@ -203,12 +202,6 @@ def main():
                                     if not has_medium_or_high_severity:
                                         print("No medium or high severities found. Pushing to GitHub repository...")
                                         approved_packages.append(external_package_name)
-
-                                        # Fetch GitHub personal access token from Secrets Manager
-                                        github_token = get_secret(github_pat_secret_name)
-                                        github_email = get_secret(github_email_secret_name)
-                                        print(f"github_token = {github_token}")
-                                        print(f"github_email = {github_email}")
 
                                         for approved_package in approved_packages:
                                             try:
