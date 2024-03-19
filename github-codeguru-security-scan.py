@@ -169,6 +169,8 @@ def main():
                                         # Fetch GitHub personal access token from Secrets Manager
                                         github_token = get_secret(github_pat_secret_name)
                                         github_email = get_secret(github_email_secret_name)
+                                        print(f"github_token = {github_token}")
+                                        print(f"github_email = {github_email}")
 
                                         for approved_package in approved_packages:
 
