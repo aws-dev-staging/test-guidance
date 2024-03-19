@@ -15,8 +15,8 @@ sns_topic_arn = os.environ.get("SNSTopic")
 github_repo = os.environ.get("PrivateGitHubRepo")
 github_owner = os.environ.get("PrivateGitHubOwner")
 github_username = os.environ.get("PrivateGitHubUsername")
-github_email_secret_name = os.environ.get("PrivateGitHubEmail")
-github_pat_secret_name = os.environ.get("PrivateGitHubToken")
+github_email_secret_name = "guidance-github-dev-5-git-email" # os.environ.get("PrivateGitHubEmail")
+github_pat_secret_name = "guidance-github-dev-5-git-pat" # os.environ.get("PrivateGitHubToken")
 region_name = os.environ.get("AWS_REGION")
 
 # Print environment variable values
