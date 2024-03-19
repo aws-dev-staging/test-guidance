@@ -243,8 +243,6 @@ Your private internal GitHub repository serves as the source code repository and
   <span style="display: block; text-align: center;"><em>Figure 3: Private Internal GitHub Repository Configuration</em></span>
 </p>
 
-❗ If you are using GitHub as both your private internal source code and package repository, the CloudFormation template, [github-private-repo.yaml](cfn/github-private-repo.yaml), is used for deploying the solution and requires the private internal GitHub repository URL as an additional parameter.
-
 ### Deploy AWS CloudFormation Stack
 
 The following section provides instructions for deploying the parameterized [codeartifact-private-repo.yaml](cfn/codeartifact-private-repo.yaml) CloudFormation template into your AWS account using the [create-codeartifact-stack.sh](shell/create-codeartifact-stack.sh) shell script. 
@@ -287,9 +285,8 @@ export CODESERVICES_SUBNET_ID1=<YOUR-PRIVATE-SUBNET-ID-1>
 export CODESERVICES_SUBNET_ID2=<YOUR-PRIVATE-SUBNET-ID-2>
 
 # (OPTIONAL) Only required with GitHub private package repository, not CodeArtifact
-export PRIVATE_GITHUB_USER=<YOUR-GITHUB-USERNAME>
+export PRIVATE_GITHUB_USERNAME=<YOUR-GITHUB-USERNAME>
 export PRIVATE_GITHUB_EMAIL=<YOUR-GITHUB-EMAIL>
-export PRIVATE_GITHUB_URL=<YOUR-PRIVATE-PACKAGE-REPOSITORY-URL>
 ```
 
 Run the _create-codeartifact-stack.sh_ shell script to deploy the solution resources defined in the codeartifact-private-repo.yaml CloudFormation template.

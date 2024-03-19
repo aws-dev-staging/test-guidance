@@ -31,6 +31,8 @@ Metadata:
           - PrivateGitHubOwner
           - PrivateGitHubRepo
           - PrivateGitHubToken
+          - PrivateGitHubUsername
+          - PrivateGitHubEmail
       - Label:
           default: Network Configuration
         Parameters:
@@ -50,7 +52,11 @@ Metadata:
       PrivateGitHubRepo:
         default: Private GitHub Source Code Repo Name
       PrivateGitHubToken:
-        default: GitHub PAT AWS Secrets Manager Secret Name
+        default: Private GitHub PAT AWS Secrets Manager Secret Name
+      PrivateGitHubUsername:
+        default: Private GitHub Username
+      PrivateGitHubEmail:
+        default: Private GitHub Email AWS Secrets Manager Secret Name
       CodeServicesVpc:
         default: AWS CodePipeline and AWS CodeBuild VPC
       CodeServicesSubnet:
@@ -86,6 +92,16 @@ Parameters:
     Type: String
     NoEcho: true
     Default: <YOUR-GITHUB-PAT-SECRET-NAME>
+  PrivateGitHubUsername:
+    Description: Private GitHub username. 
+    Type: String
+    NoEcho: true
+    Default: <YOUR-GITHUB-USERNAME>
+  PrivateGitHubEmail:
+    Description: Private GitHub email secret name. 
+    Type: String
+    NoEcho: true
+    Default: <YOUR-GITHUB-EMAIL-SECRET-NAME>
   CodeServicesVpc:
     Description: CodeBuild and CodePipeline VPC.
     Type: 'AWS::EC2::VPC::Id'
@@ -206,10 +222,18 @@ Resources:
                     "type": "PLAINTEXT",
                     "value": "${PrivateGitHubRepo}"
                   },{
+                    "name": "PrivateGitHubUsername",
+                    "type": "PLAINTEXT",
+                    "value": "${PrivateGitHubUsername}"
+                  },{
+                    "name": "PrivateGitHubEmail",
+                    "type": "SECRETS_MANAGER",
+                    "value": "${PrivateGitHubEmail}"
+                  },{
                     "name": "SNSTopic",
                     "type": "PLAINTEXT",
                     "value": "${SNSTopic}"
-                  }]                  ]
+                  }]
               RunOrder: 1
 
 # GitHub Webhook to filter and push updates
