@@ -22,7 +22,6 @@ region_name = os.environ.get("AWS_REGION")
 # Print environment variable values
 print("SNSTopic: ", sns_topic_arn)
 print("PrivateGitHubRepo: ", github_repo)
-print("PrivateGitHubOwner: ", github_owner)
 print("PrivateGitHubUsername: ", github_username)
 print("PrivateGitHubEmail: ", github_email_secret_name)
 print("PrivateGitHubToken: ", github_pat_secret_name)
@@ -68,6 +67,7 @@ def get_secret(secret_id):
     client = session.client(service_name='secretsmanager', region_name=region_name)
 
     try:
+        print("secret_id = " + secret_id)
         response = client.get_secret_value(SecretId=secret_id)
         secret = response['SecretString']
         return secret
