@@ -213,7 +213,7 @@ def main():
                                                     # GitHub repository details
                                                     commit_message = "Add private package - " +  zip_file_name # Commit message
                                                     branch = "main"  # Branch where you want to push the file
-                                                    url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
+                                                    url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packges/{zip_file_name}"
 
                                                     # Query existing file SHA
                                                     get_existing_file_response = requests.get(
