@@ -232,8 +232,7 @@ def main():
                                                         response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, True, existing_file_sha)
                                                     elif get_existing_file_response.status_code == 404:
                                                         # If file not found, call put_file_to_github without SHA
-                                                        print("File Does Not Exist Yet - " + str(existing_file_sha))
-                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, existing_file_sha)
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, None)
                                                     else:
                                                         print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                 else:
