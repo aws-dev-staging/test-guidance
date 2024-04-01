@@ -238,13 +238,13 @@ def main():
                                                         response = get_existing_file_response
 
                                                     print("New private package version asset created successfully.")
-                                                    print("-- RESPONSE -- " + str(response))
+                                                    print("-- GITHUB RESPONSE -- " + str(response))
                                                     # formatted_message = format_findings(get_findings_response["findings"])
 
                                                     sns_client.publish(
                                                         TopicArn=sns_topic_arn,
                                                         Subject=f"{external_package_name} Package Approved",
-                                                        Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{response}"
+                                                        Message=f"GitHub private package details: {external_package_name}\n\n{response}"
                                                     )
 
                                                 else:
@@ -259,7 +259,7 @@ def main():
                                         sns_client.publish(
                                             TopicArn=sns_topic_arn,
                                             Subject=f"{external_package_name} Security Findings Report",
-                                            Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{formatted_message}"
+                                            Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
                         else:
                             raise Exception(f"Source failed to upload external package to CodeGuru Security with status {upload_response.status_code}")

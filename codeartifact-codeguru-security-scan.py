@@ -32,6 +32,31 @@ def format_findings(findings):
         
     return formatted_message
 
+def format_private_package_response(response):
+    """
+    Parses the response output from the publish_package_version method.
+
+    Args:
+        response (dict): The response dictionary from the API call.
+
+    Returns:
+        dict: Parsed information from the response.
+    """
+    parsed_response = {
+        "format": response.get("format"),
+        "namespace": response.get("namespace"),
+        "package": response.get("package"),
+        "version": response.get("version"),
+        "versionRevision": response.get("versionRevision"),
+        "status": response.get("status"),
+        "asset": {
+            "name": response["asset"]["name"],
+            "size": response["asset"]["size"],
+            "hashes": response["asset"]["hashes"]
+        }
+    }
+    return parsed_response
+
 def main():
     try:
         print("Initiating Security Scan for External Package Repositories")
@@ -147,13 +172,12 @@ def main():
                                             assetSHA256=asset_sha256,  # Provide the SHA256 hash of the asset content
                                         )
                                         print("New private package version asset created successfully.")
-                                        print("-- RESPONSE -- " + str(package_version_response))
-                                        # formatted_message = format_findings(get_findings_response["findings"])
+                                        formatted_message = format_private_package_response(package_version_response)
 
                                         sns_client.publish(
                                             TopicArn=sns_topic_arn,
                                             Subject=f"{external_package_name} Package Approved",
-                                            Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{package_version_response}"
+                                            Message=f"AWS CodeArtifact private package details: {external_package_name}\n\n{formatted_message}"
                                         )
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
@@ -163,7 +187,7 @@ def main():
                                         sns_client.publish(
                                             TopicArn=sns_topic_arn,
                                             Subject=f"{external_package_name} Security Findings Report",
-                                            Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{formatted_message}"
+                                            Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
                         else:
                             raise Exception(f"Source failed to upload external package to CodeGuru Security with status {upload_response.status_code}")
