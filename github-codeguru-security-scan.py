@@ -235,6 +235,18 @@ def main():
                                                         response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, None)
                                                     else:
                                                         print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
+                                                        response = get_existing_file_response
+
+                                                    print("New private package version asset created successfully.")
+                                                    print("-- RESPONSE -- " + str(response))
+                                                    # formatted_message = format_findings(get_findings_response["findings"])
+
+                                                    sns_client.publish(
+                                                        TopicArn=sns_topic_arn,
+                                                        Subject=f"{external_package_name} Package Approved",
+                                                        Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{response}"
+                                                    )
+
                                                 else:
                                                     print("GitHub personal access token not found in Secrets Manager.")
                                             except Exception as error:
@@ -242,7 +254,6 @@ def main():
 
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
-                                        subject = external_package_name + " Medium to High Severity Findings"
                                         formatted_message = format_findings(get_findings_response["findings"])
 
                                         sns_client.publish(

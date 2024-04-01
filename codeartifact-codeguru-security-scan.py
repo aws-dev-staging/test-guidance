@@ -146,7 +146,15 @@ def main():
                                             assetContent=asset_content,  # Provide the content of the asset file
                                             assetSHA256=asset_sha256,  # Provide the SHA256 hash of the asset content
                                         )
-                                        print("New generic package version asset created successfully.")
+                                        print("New private package version asset created successfully.")
+                                        print("-- RESPONSE -- " + str(package_version_response))
+                                        # formatted_message = format_findings(get_findings_response["findings"])
+
+                                        sns_client.publish(
+                                            TopicArn=sns_topic_arn,
+                                            Subject=f"{external_package_name} Package Approved",
+                                            Message=f"Security Findings Report for External Package Repository: {external_package_name}\n\n{package_version_response}"
+                                        )
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         subject = external_package_name + " Medium to High Severity Findings"
