@@ -6,7 +6,6 @@ import time
 import boto3
 import base64
 import requests
-import subprocess
 from datetime import datetime
 from dateutil import tz
 
@@ -37,7 +36,7 @@ session = boto3.session.Session()
 secrets_manager_client = session.client(service_name='secretsmanager', region_name=region_name)
 
 # Method to push file to GitHub repo
-def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha, existing_file_sha):
+def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha, branch_name, existing_file_sha):
     try:
         response = None
         headers = {
@@ -52,21 +51,22 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                 "name": github_username,
                 "email": github_email
             },
-            "content": content_base64
+            "content": content_base64,
+            "branch": branch_name
         }
 
-        if include_sha:
+        if include_sha and existing_file_sha:
             data["sha"] = existing_file_sha
 
         response = requests.put(url, headers=headers, json=data)
 
         if response.status_code == 200 or response.status_code == 201:
-            print(f"Private internal package pushed to GitHub successfully.")
+            print(f"Private internal package pushed to GitHub branch '{branch_name}' successfully.")
         else:
-            print(f"Failed to push file to GitHub. Status code: {response.status_code}")
+            print(f"Failed to push file to GitHub branch '{branch_name}'. Status code: {response.status_code}")
             print("Response content: ", response.text)
     except Exception as error:
-        print(f"Failed to push file to GitHub due to an exception: {error}")
+        print(f"Failed to push file to GitHub branch '{branch_name}' due to an exception: {error}")
     finally:
         return response
 
@@ -206,7 +206,7 @@ def main():
 
                                                     # GitHub repository details
                                                     commit_message = "Add private package - " +  zip_file_name # Commit message
-                                                    branch = "main"  # Branch where you want to push the file
+                                                    branch_name = f"package/{approved_package}"  # Branch name
                                                     url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
                                                     # Query existing file SHA
@@ -223,10 +223,10 @@ def main():
                                                         existing_file_sha = existing_file_info.get('sha')
 
                                                         # Send the request to GitHub API
-                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, True, existing_file_sha)
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, True, branch_name, existing_file_sha)
                                                     elif get_existing_file_response.status_code == 404:
                                                         # If file not found, call put_file_to_github without SHA
-                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, None)
+                                                        response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, False, branch_name, None)
                                                     else:
                                                         print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                         response = get_existing_file_response
