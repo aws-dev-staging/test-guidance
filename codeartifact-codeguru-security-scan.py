@@ -15,6 +15,7 @@ sns_topic_arn = os.environ.get("SNSTopic")
 
 def format_findings(findings):
     formatted_message = ""
+
     for index, finding in enumerate(findings, start=1):
         formatted_message += f"\n{index}. Vulnerability: {finding['title']}\n"
         formatted_message += f"   - Description: {finding['description']}\n"
@@ -33,15 +34,7 @@ def format_findings(findings):
     return formatted_message
 
 def format_private_package_response(response):
-    """
-    Parses the response output from the publish_package_version method.
 
-    Args:
-        response (dict): The response dictionary from the API call.
-
-    Returns:
-        dict: Parsed information from the response.
-    """
     parsed_response = {
         "format": response.get("format"),
         "namespace": response.get("namespace"),
@@ -61,26 +54,25 @@ def main():
     try:
         print("Initiating Security Scan for External Package Repositories")
 
-        # Instantiate boto3 clients
-        codeguru_security_client = boto3.client('codeguru-security')
-
         # Read CSV file to get external package information
         with open('external-package-request.csv', newline='') as csvfile:
             package_reader = csv.reader(csvfile)
+
             for row in package_reader:
                 external_package_name, external_package_url = row
-                # Remove non-ASCII characters from the package name
-                external_package_name = re.sub(r'[^\x00-\x7F]+', '', external_package_name)
+                external_package_name = re.sub(r'[^\x00-\x7F]+', '', external_package_name) # Remove non-ASCII characters from the package name
                 print(f"Processing package: {external_package_name} from {external_package_url}")
 
                 # Download external package repository
                 zip_file_name = f"{external_package_name}.zip"
                 download_response = requests.get(external_package_url)
+                
                 if download_response.status_code == 200:
                     with open(zip_file_name, "wb") as zip_file:
-                        zip_file.write(download_response.content)
+                        zip_file.write(download_response.content)                    
                     
                     print("Package downloaded successfully")
+
                     # Perform CodeGuru Security Scans
                     try:
                         print("Initiating Security Scan for External Package Repository: " + external_package_name)
@@ -89,7 +81,6 @@ def main():
                         codeguru_security_client = boto3.client('codeguru-security')
                         codeartifact_client = boto3.client('codeartifact')
                         sns_client = boto3.client('sns')
-                        codebuild_client = boto3.client('codebuild')
 
                         print("Creating CodeGuru Security Upload URL...")
 
@@ -154,6 +145,7 @@ def main():
 
                                     if not has_medium_or_high_severity:
                                         print("No medium or high severities found. Creating new package version asset...")
+                                        
                                         # Calculate the SHA256 hash of the asset content
                                         with open(zip_file_name, "rb") as f:
                                             asset_content = f.read()

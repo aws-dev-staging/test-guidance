@@ -106,6 +106,7 @@ def main():
 
         # Read CSV file to get external package information
         with open('external-package-request.csv', newline='') as csvfile:
+            
             package_reader = csv.reader(csvfile)
             for row in package_reader:
                 external_package_name, external_package_url = row
@@ -115,6 +116,7 @@ def main():
                 # Download external package repository
                 zip_file_name = f"{external_package_name}.zip"
                 download_response = requests.get(external_package_url)
+                
                 if download_response.status_code == 200:
                     with open(zip_file_name, "wb") as zip_file:
                         zip_file.write(download_response.content)
@@ -123,6 +125,7 @@ def main():
                     # Perform CodeGuru Security Scans
                     try:
                         print("Initiating Security Scan for External Package Repository: " + external_package_name)
+                        
                         print("Creating CodeGuru Security Upload URL...")
                         create_url_input = {"scanName": external_package_name}
                         create_url_response = codeguru_security_client.create_upload_url(**create_url_input)
@@ -229,9 +232,6 @@ def main():
                                                         response = get_existing_file_response
 
                                                     print("New private package version asset created successfully.")
-                                                    print("-- GITHUB RESPONSE -- " + str(response))
-                                                    # formatted_message = format_findings(get_findings_response["findings"])
-
                                                     sns_client.publish(
                                                         TopicArn=sns_topic_arn,
                                                         Subject=f"{external_package_name} Package Approved",
