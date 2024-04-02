@@ -45,6 +45,26 @@ def put_file_to_github(url, github_token, github_username, github_email, content
             "X-GitHub-Api-Version": "2022-11-28"
         }
 
+        # Check if the branch exists
+        get_branch_response = requests.get(
+            f"https://api.github.com/repos/{github_owner}/{github_repo}/branches/{branch_name}",
+            headers=headers
+        )
+
+        if get_branch_response.status_code == 404:
+            # Branch does not exist, create it
+            create_branch_response = requests.post(
+                f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
+                headers=headers,
+                json={
+                    "ref": f"refs/heads/{branch_name}",
+                    "sha": "<commit_sha_of_existing_branch_or_default>"
+                }
+            )
+            if create_branch_response.status_code != 201:
+                raise Exception(f"Failed to create branch '{branch_name}' in the GitHub repository. Status code: {create_branch_response.status_code}")
+            print(f"Branch '{branch_name}' created successfully.")
+
         data = {
             "message": commit_message,
             "committer": {
