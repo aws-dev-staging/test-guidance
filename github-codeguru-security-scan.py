@@ -225,8 +225,8 @@ def main():
                                                     content_base64 = base64.b64encode(content).decode('utf-8')
 
                                                     # GitHub repository details
-                                                    commit_message = "Add private package - " +  zip_file_name # Commit message
-                                                    branch_name = f"package/{approved_package}"  # Branch name
+                                                    commit_message = "Add private package - " +  zip_file_name
+                                                    branch_name = approved_package
                                                     url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
                                                     # Query existing file SHA
