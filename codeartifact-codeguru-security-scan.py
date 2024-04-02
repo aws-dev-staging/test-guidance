@@ -166,11 +166,12 @@ def main():
                                             format="generic",
                                             namespace=external_package_name,
                                             package=external_package_name,
-                                            packageVersion="Latest",  # Provide the appropriate version here
-                                            assetName=zip_file_name,  # Provide the path to the asset file
-                                            assetContent=asset_content,  # Provide the content of the asset file
-                                            assetSHA256=asset_sha256,  # Provide the SHA256 hash of the asset content
+                                            packageVersion=str(int(time.time())),  # Use current timestamp as version
+                                            assetName=zip_file_name,
+                                            assetContent=asset_content,
+                                            assetSHA256=asset_sha256,
                                         )
+
                                         print("New private package version asset created successfully.")
                                         formatted_message = format_private_package_response(package_version_response)
 

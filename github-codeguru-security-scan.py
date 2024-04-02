@@ -235,7 +235,16 @@ def main():
                                                     sns_client.publish(
                                                         TopicArn=sns_topic_arn,
                                                         Subject=f"{external_package_name} Package Approved",
-                                                        Message=f"GitHub private package details: {external_package_name}\n\n{response}"
+                                                        Message=f"GitHub private package details:\n\n"
+                                                                f"Package Name: {external_package_name}\n"
+                                                                f"GitHub Repository: {github_repo}\n"
+                                                                f"Owner: {github_owner}\n"
+                                                                f"Pushed by: {github_username}\n"
+                                                                f"Commit Message: {commit_message}\n"
+                                                                f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
+                                                                f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
+                                                                f"Status Code: {response.status_code}\n"
+                                                                f"Response Body: {response.text}\n"
                                                     )
 
                                                 else:
