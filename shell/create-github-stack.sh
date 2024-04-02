@@ -26,6 +26,7 @@ ParameterKey=PrivateGitHubEmail,ParameterValue=${PRIVATE_GITHUB_EMAIL_SECRET_NAM
 ParameterKey=CodeServicesVpc,ParameterValue=${CODESERVICES_VPC_ID} \
 ParameterKey=CodeServicesSubnet,ParameterValue=${CODESERVICES_SUBNET_ID1}\\,${CODESERVICES_SUBNET_ID2} \
 --capabilities CAPABILITY_IAM
+--role-arn arn:aws:iam::991639198278:role/Guidance-CloudFormation-Role
 
 aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"
 aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
