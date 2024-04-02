@@ -34,6 +34,7 @@ def format_findings(findings):
     return formatted_message
 
 def format_private_package_response(response):
+    print("format_private_package_response")
 
     parsed_response = {
         "format": response.get("format"),
@@ -152,26 +153,31 @@ def main():
                                         asset_sha256 = hashlib.sha256(asset_content).hexdigest()
 
                                         # Publish the package version with CodeArtifact
-                                        package_version_response = codeartifact_client.publish_package_version(
-                                            domain=codeartifact_domain,
-                                            repository=codeartifact_repo,
-                                            format="generic",
-                                            namespace=external_package_name,
-                                            package=external_package_name,
-                                            packageVersion=str(int(time.time())),  # Use current timestamp as version
-                                            assetName=zip_file_name,
-                                            assetContent=asset_content,
-                                            assetSHA256=asset_sha256,
-                                        )
+                                        try:
+                                            package_version_response = codeartifact_client.publish_package_version(
+                                                domain=codeartifact_domain,
+                                                repository=codeartifact_repo,
+                                                format="generic",
+                                                namespace=external_package_name,
+                                                package=external_package_name,
+                                                packageVersion=str(int(time.time())),  # Use current timestamp as version
+                                                assetName=zip_file_name,
+                                                assetContent=asset_content,
+                                                assetSHA256=asset_sha256,
+                                            )
 
-                                        print("New private package version asset created successfully.")
-                                        formatted_message = format_private_package_response(package_version_response)
+                                            print("New private package version asset created successfully.")
+                                            formatted_message = format_private_package_response(package_version_response)
 
-                                        sns_client.publish(
-                                            TopicArn=sns_topic_arn,
-                                            Subject=f"{external_package_name} Package Approved",
-                                            Message=f"AWS CodeArtifact private package details: {external_package_name}\n\n{formatted_message}"
-                                        )
+                                            sns_client.publish(
+                                                TopicArn=sns_topic_arn,
+                                                Subject=f"{external_package_name} Package Approved",
+                                                Message=f"AWS CodeArtifact private package details: {external_package_name}\n\n{formatted_message}"
+                                            )
+
+                                            print("SNS published successfully.")
+                                        except Exception as error:
+                                            print(f"Failed to publish package version: {error}")
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         subject = external_package_name + " Medium to High Severity Findings"

@@ -28,12 +28,15 @@ print("PrivateGitHubToken: ", github_token)
 print("AWS_REGION: ", region_name)
 
 # Instantiate boto3 clients
-codeguru_security_client = boto3.client('codeguru-security')
-codeartifact_client = boto3.client('codeartifact')
-sns_client = boto3.client('sns')
-codebuild_client = boto3.client('codebuild')
-session = boto3.session.Session()
-secrets_manager_client = session.client(service_name='secretsmanager', region_name=region_name)
+try:
+    codeguru_security_client = boto3.client('codeguru-security')
+    codeartifact_client = boto3.client('codeartifact')
+    sns_client = boto3.client('sns')
+    codebuild_client = boto3.client('codebuild')
+    session = boto3.session.Session()
+    secrets_manager_client = session.client(service_name='secretsmanager', region_name=region_name)
+except Exception as error:
+    print(f"Failed to instantiate boto3 clients: {error}")
 
 # Method to push file to GitHub repo
 def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, include_sha, branch_name, existing_file_sha):
@@ -266,6 +269,8 @@ def main():
                                                                 f"Status Code: {response.status_code}\n"
                                                                 f"Response Body: {response.text}\n"
                                                     )
+
+                                                    print("SNS published successfully.")
 
                                                 else:
                                                     print("GitHub personal access token not found in Secrets Manager.")
