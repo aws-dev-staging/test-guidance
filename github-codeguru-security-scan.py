@@ -70,15 +70,6 @@ def put_file_to_github(url, github_token, github_username, github_email, content
     finally:
         return response
 
-# Method to execute shell commands
-def run_command(command):
-    try:
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.stdout.decode('utf-8').strip()
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing command: {e}")
-        return None
-
 # Method to format findings for SNS email readability
 def format_findings(findings):
     formatted_message = ""
