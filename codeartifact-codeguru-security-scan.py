@@ -13,6 +13,9 @@ codeartifact_domain = os.environ.get("ExampleDomain")
 codeartifact_repo = os.environ.get("InternalRepository")
 sns_topic_arn = os.environ.get("SNSTopic")
 
+# Print environment variable values
+print("SNSTopic: ", sns_topic_arn)
+
 def format_findings(findings):
     formatted_message = ""
 
@@ -169,13 +172,16 @@ def main():
                                             print("New private package version asset created successfully.")
                                             formatted_message = format_private_package_response(package_version_response)
 
-                                            sns_client.publish(
+                                            # Publish to SNS and capture response
+                                            sns_response = sns_client.publish(
                                                 TopicArn=sns_topic_arn,
                                                 Subject=f"{external_package_name} Package Approved",
                                                 Message=f"AWS CodeArtifact private package details: {external_package_name}\n\n{formatted_message}"
                                             )
 
                                             print("SNS published successfully.")
+                                            print("SNS response:", sns_response)
+                                            print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                                         except Exception as error:
                                             print(f"Failed to publish package version: {error}")
                                     else:
@@ -183,11 +189,16 @@ def main():
                                         subject = external_package_name + " Medium to High Severity Findings"
                                         formatted_message = format_findings(get_findings_response["findings"])
 
-                                        sns_client.publish(
+                                        # Publish to SNS and capture response
+                                        sns_response = sns_client.publish(
                                             TopicArn=sns_topic_arn,
                                             Subject=f"{external_package_name} Security Findings Report",
                                             Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
+                                        
+                                        print("SNS published successfully.")
+                                        print("SNS response:", sns_response)
+                                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                         else:
                             raise Exception(f"Source failed to upload external package to CodeGuru Security with status {upload_response.status_code}")
                     except Exception as error:
