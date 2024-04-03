@@ -288,7 +288,7 @@ def main():
                             response = get_existing_file_response
 
                         print("New private package version asset created successfully.")
-                        sns_client.publish(
+                        sns_response = sns_client.publish(
                             TopicArn=sns_topic_arn,
                             Subject=f"{approved_package} Package Approved",
                             Message=f"GitHub private package details:\n\n"
@@ -302,6 +302,10 @@ def main():
                                     f"Status Code: {response.status_code}\n"
                                     f"Response Body: {response.text}\n"
                         )
+
+                        print("SNS published successfully.")
+                        print("SNS response:", sns_response)
+                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
 
                         print("SNS published successfully.")
 
