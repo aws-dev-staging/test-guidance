@@ -64,6 +64,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
 
             # GitHub API endpoint for getting the latest commit on the default branch
+            default_branch = "main"
             url = f"https://api.github.com/repos/{github_owner}/{github_repo}/commits/{default_branch}"
 
             # Headers containing authorization token and specifying API version
