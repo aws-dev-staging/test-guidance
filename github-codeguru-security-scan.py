@@ -217,13 +217,12 @@ def main():
                                     # Check if any finding severity is medium or high
                                     has_medium_or_high_severity = any(finding["severity"] in ["Medium", "High"] for finding in get_findings_response["findings"])
 
-                                    # If the package passes the security checks, add it to the approved_packages list
                                     if not has_medium_or_high_severity:
                                         print("No medium or high severities found. Pushing to GitHub repository...")
 
                                         if github_token:
                                             print("GitHub token found. Attempting to push package to GitHub repository...")
-                                            zip_file_name = f"{approved_package}.zip"
+                                            zip_file_name = f"{external_package_name}.zip"
 
                                             # Load file content
                                             with open(zip_file_name, "rb") as file:
@@ -234,7 +233,6 @@ def main():
 
                                             # GitHub repository details
                                             commit_message = "Add private package - " +  zip_file_name
-                                            branch_name = approved_package
                                             url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
                                             # Query existing file SHA
@@ -252,10 +250,10 @@ def main():
                                                 existing_file_sha = existing_file_info.get('sha')
 
                                                 # Send the request to GitHub API
-                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, existing_file_sha)
+                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
                                             elif get_existing_file_response.status_code == 404:
                                                 # If file not found, call put_file_to_github without SHA
-                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, None)
+                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, None)
                                             else:
                                                 print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                 response = get_existing_file_response

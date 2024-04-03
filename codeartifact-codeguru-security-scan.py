@@ -179,9 +179,6 @@ def main():
                                                 Message=f"AWS CodeArtifact private package details: {external_package_name}\n\n{formatted_message}"
                                             )
 
-                                            print("SNS published successfully.")
-                                            print("SNS response:", sns_response)
-                                            print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                                         except Exception as error:
                                             print(f"Failed to publish package version: {error}")
                                     else:
@@ -195,10 +192,6 @@ def main():
                                             Subject=f"{external_package_name} Security Findings Report",
                                             Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
-                                        
-                                        print("SNS published successfully.")
-                                        print("SNS response:", sns_response)
-                                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                         else:
                             raise Exception(f"Source failed to upload external package to CodeGuru Security with status {upload_response.status_code}")
                     except Exception as error:
