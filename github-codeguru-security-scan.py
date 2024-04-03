@@ -289,6 +289,9 @@ def main():
                                                 response = get_existing_file_response
 
                                             print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                            
+                                            my_data = response.json()
+                                            print("My Data - " + str(my_data))
                                             sns_response = sns_client.publish(
                                                 TopicArn=sns_topic_arn,
                                                 Subject=f"{external_package_name} Package Approved",
