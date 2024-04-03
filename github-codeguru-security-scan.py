@@ -40,6 +40,8 @@ except Exception as error:
 
 # Method to push file to GitHub repo
 def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, existing_file_sha=None):
+    print("put_file_to_github")
+
     try:
         response = None
         headers = {
@@ -225,16 +227,16 @@ def main():
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         formatted_message = format_findings(get_findings_response["findings"])
 
-                                        # Publish to SNS and capture response
-                                        sns_response = sns_client.publish(
-                                            TopicArn=sns_topic_arn,
-                                            Subject=f"{external_package_name} Security Findings Report",
-                                            Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
-                                        )
-                                        
-                                        print("SNS published successfully.")
-                                        print("SNS response:", sns_response)
-                                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+                                    # Publish to SNS and capture response
+                                    sns_response = sns_client.publish(
+                                        TopicArn=sns_topic_arn,
+                                        Subject=f"{external_package_name} Security Findings Report",
+                                        Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
+                                    )
+                                    
+                                    print("SNS published successfully.")
+                                    print("SNS response:", sns_response)
+                                    print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                                 else:
                                     print("No findings found.")
 
@@ -274,6 +276,7 @@ def main():
                             }
                         )
 
+                        print("Entering Danger Zone.")
                         if get_existing_file_response.status_code == 200:
                             existing_file_info = get_existing_file_response.json()
                             existing_file_sha = existing_file_info.get('sha')
