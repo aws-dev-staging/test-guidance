@@ -40,7 +40,9 @@ except Exception as error:
 
 # Method to push file to GitHub repo
 def put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, existing_file_sha=None):
-    print("put_file_to_github")
+
+    if existing_file_sha:
+        print("EXISTING SHA 1 - " + str(existing_file_sha))
 
     try:
         response = None
@@ -61,22 +63,43 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         if get_branch_response.status_code == 404:
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
 
+            # GitHub API endpoint for getting the latest commit on the default branch
+            url = f"https://api.github.com/repos/{github_owner}/{github_repo}/commits/{default_branch}"
+
+            # Headers containing authorization token and specifying API version
+            headers = {
+                "Authorization": f"token {github_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+
             try:
-                create_branch_response = requests.post(
-                    f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
-                    headers=headers,
-                    json={
-                        "ref": f"refs/heads/{branch_name}",
-                    }
-                )
-                create_branch_response.raise_for_status()  # Raise an error for non-2xx status codes
-            except requests.exceptions.RequestException as e:
-                print(f"An error occurred while creating the branch: {e}")
+                # Send GET request to retrieve information about the latest commit on the default branch
+                response = requests.get(url, headers=headers)
+                response_data = response.json()
 
-            if create_branch_response.status_code != 201:
-                raise Exception(f"Failed to create branch '{branch_name}' in the GitHub repository. Status code: {create_branch_response.status_code}")
-            print(f"Branch '{branch_name}' created successfully.")
+                # Extract the SHA of the latest commit
+                sha_of_default_branch = response_data["sha"]
 
+                print(f"SHA of the latest commit on '{default_branch}' branch: {sha_of_default_branch}")
+
+                try:
+                    create_branch_response = requests.post(
+                        f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
+                        headers=headers,
+                        json={
+                            "ref": f"refs/heads/{branch_name}",
+                            "sha":sha_of_default_branch
+                        }
+                    )
+                    create_branch_response.raise_for_status()  # Raise an error for non-2xx status codes
+                
+                except requests.exceptions.RequestException as e:
+                    print(f"An error occurred while creating the branch: {e}")
+            
+            except Exception as e:
+                print("Error retrieving SHA:", e)
+
+        print(f"Branch '{branch_name}' created successfully.")
         # Define the path to the package file in the repository
         package_path = f"packages/{zip_file_name}"
 
@@ -92,6 +115,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         }
 
         if existing_file_sha:
+            print("EXISTING SHA 2 - " + str(existing_file_sha))
             data["sha"] = existing_file_sha
 
         print(f"Pushing file to GitHub branch '{branch_name}'...")

@@ -22,8 +22,9 @@ ParameterKey=PrivateGitHubRepo,ParameterValue=${PRIVATE_GITHUB_REPO} \
 ParameterKey=PrivateGitHubToken,ParameterValue=${PRIVATE_GITHUB_TOKEN_SECRET_NAME} \
 ParameterKey=CodeServicesVpc,ParameterValue=${CODESERVICES_VPC_ID} \
 ParameterKey=CodeServicesSubnet,ParameterValue=${CODESERVICES_SUBNET_ID1}\\,${CODESERVICES_SUBNET_ID2} \
---capabilities CAPABILITY_IAM \
---role-arn arn:aws:iam::991639198278:role/Guidance-CloudFormation-Role
+--capabilities CAPABILITY_IAM
+
+# --role-arn arn:aws:iam::991639198278:role/Guidance-CloudFormation-Role
 
 # You can track the CloudFormation stack deployment status in AWS CloudFormation console or in your terminal with the following commands:
 aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"

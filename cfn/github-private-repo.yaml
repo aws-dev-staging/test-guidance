@@ -222,6 +222,10 @@ Resources:
                     "type": "PLAINTEXT",
                     "value": "${PrivateGitHubRepo}"
                   },{
+                    "name": "PrivateGitHubOwner",
+                    "type": "PLAINTEXT",
+                    "value": "${PrivateGitHubOwner}"
+                  },{
                     "name": "PrivateGitHubUsername",
                     "type": "PLAINTEXT",
                     "value": "${PrivateGitHubUsername}"
