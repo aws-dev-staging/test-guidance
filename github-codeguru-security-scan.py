@@ -102,7 +102,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
 
         print(f"Branch '{branch_name}' created successfully.")
         # Define the path to the package file in the repository
-        package_path = f"packages/{zip_file_name}"
+        package_path = f"packages/{branch_name}"
 
         data = {
             "message": commit_message,
