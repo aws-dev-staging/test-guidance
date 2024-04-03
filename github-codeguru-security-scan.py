@@ -127,7 +127,6 @@ def sanitize_package_name(name):
     return re.sub(r'[^a-zA-Z0-9-_$:.]', '', name)
 
 def main():
-    approved_packages = []
     
     try:
         # Instantiate boto3 clients
@@ -221,22 +220,82 @@ def main():
                                     # If the package passes the security checks, add it to the approved_packages list
                                     if not has_medium_or_high_severity:
                                         print("No medium or high severities found. Pushing to GitHub repository...")
-                                        approved_packages.append(external_package_name)
+
+                                        if github_token:
+                                            print("GitHub token found. Attempting to push package to GitHub repository...")
+                                            zip_file_name = f"{approved_package}.zip"
+
+                                            # Load file content
+                                            with open(zip_file_name, "rb") as file:
+                                                content = file.read()
+
+                                            # Encode content to base64
+                                            content_base64 = base64.b64encode(content).decode('utf-8')
+
+                                            # GitHub repository details
+                                            commit_message = "Add private package - " +  zip_file_name
+                                            branch_name = approved_package
+                                            url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
+
+                                            # Query existing file SHA
+                                            get_existing_file_response = requests.get(
+                                                url,
+                                                headers={
+                                                    "Accept": "application/vnd.github.v3+json",
+                                                    "Authorization": f"Bearer {github_token}"
+                                                }
+                                            )
+
+                                            print("Entering Danger Zone.")
+                                            if get_existing_file_response.status_code == 200:
+                                                existing_file_info = get_existing_file_response.json()
+                                                existing_file_sha = existing_file_info.get('sha')
+
+                                                # Send the request to GitHub API
+                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, existing_file_sha)
+                                            elif get_existing_file_response.status_code == 404:
+                                                # If file not found, call put_file_to_github without SHA
+                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, None)
+                                            else:
+                                                print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
+                                                response = get_existing_file_response
+
+                                            print("New private package version asset created successfully.")
+                                            sns_response = sns_client.publish(
+                                                TopicArn=sns_topic_arn,
+                                                Subject=f"{approved_package} Package Approved",
+                                                Message=f"GitHub private package details:\n\n"
+                                                        f"Package Name: {approved_package}\n"
+                                                        f"GitHub Repository: {github_repo}\n"
+                                                        f"Owner: {github_owner}\n"
+                                                        f"Pushed by: {github_username}\n"
+                                                        f"Commit Message: {commit_message}\n"
+                                                        f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
+                                                        f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
+                                                        f"Status Code: {response.status_code}\n"
+                                                        f"Response Body: {response.text}\n"
+                                            )
+
+                                            print("SNS published successfully.")
+                                            print("SNS response:", sns_response)
+                                            print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+
+                                            print("SNS published successfully.")
 
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         formatted_message = format_findings(get_findings_response["findings"])
 
-                                    # Publish to SNS and capture response
-                                    sns_response = sns_client.publish(
-                                        TopicArn=sns_topic_arn,
-                                        Subject=f"{external_package_name} Security Findings Report",
-                                        Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
-                                    )
-                                    
-                                    print("SNS published successfully.")
-                                    print("SNS response:", sns_response)
-                                    print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+                                        # Publish to SNS and capture response
+                                        sns_response = sns_client.publish(
+                                            TopicArn=sns_topic_arn,
+                                            Subject=f"{external_package_name} Security Findings Report",
+                                            Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
+                                        )
+                                        
+                                        print("SNS published successfully.")
+                                        print("SNS response:", sns_response)
+                                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
                                 else:
                                     print("No findings found.")
 
@@ -247,75 +306,6 @@ def main():
 
                 else:
                     print(f"Failed to download package from {external_package_url}")
-
-            # After processing all packages, send notifications for approved packages
-            for approved_package in approved_packages:
-                try:
-                    if github_token:
-                        print("GitHub token found. Attempting to push package to GitHub repository...")
-                        zip_file_name = f"{approved_package}.zip"
-
-                        # Load file content
-                        with open(zip_file_name, "rb") as file:
-                            content = file.read()
-
-                        # Encode content to base64
-                        content_base64 = base64.b64encode(content).decode('utf-8')
-
-                        # GitHub repository details
-                        commit_message = "Add private package - " +  zip_file_name
-                        branch_name = approved_package
-                        url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
-
-                        # Query existing file SHA
-                        get_existing_file_response = requests.get(
-                            url,
-                            headers={
-                                "Accept": "application/vnd.github.v3+json",
-                                "Authorization": f"Bearer {github_token}"
-                            }
-                        )
-
-                        print("Entering Danger Zone.")
-                        if get_existing_file_response.status_code == 200:
-                            existing_file_info = get_existing_file_response.json()
-                            existing_file_sha = existing_file_info.get('sha')
-
-                            # Send the request to GitHub API
-                            response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, existing_file_sha)
-                        elif get_existing_file_response.status_code == 404:
-                            # If file not found, call put_file_to_github without SHA
-                            response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, branch_name, None)
-                        else:
-                            print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
-                            response = get_existing_file_response
-
-                        print("New private package version asset created successfully.")
-                        sns_response = sns_client.publish(
-                            TopicArn=sns_topic_arn,
-                            Subject=f"{approved_package} Package Approved",
-                            Message=f"GitHub private package details:\n\n"
-                                    f"Package Name: {approved_package}\n"
-                                    f"GitHub Repository: {github_repo}\n"
-                                    f"Owner: {github_owner}\n"
-                                    f"Pushed by: {github_username}\n"
-                                    f"Commit Message: {commit_message}\n"
-                                    f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
-                                    f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
-                                    f"Status Code: {response.status_code}\n"
-                                    f"Response Body: {response.text}\n"
-                        )
-
-                        print("SNS published successfully.")
-                        print("SNS response:", sns_response)
-                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
-
-                        print("SNS published successfully.")
-
-                    else:
-                        print("GitHub personal access token not found in Secrets Manager.")
-                except Exception as error:
-                    print(f"Action Failed for approved package {approved_package}, reason: {error}")
 
     except Exception as error:
         print(f"Action Failed, reason: {error}")
