@@ -61,13 +61,17 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         if get_branch_response.status_code == 404:
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
 
-            create_branch_response = requests.post(
-                f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
-                headers=headers,
-                json={
-                    "ref": f"refs/heads/{branch_name}",
-                }
-            )
+            try:
+                create_branch_response = requests.post(
+                    f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
+                    headers=headers,
+                    json={
+                        "ref": f"refs/heads/{branch_name}",
+                    }
+                )
+                create_branch_response.raise_for_status()  # Raise an error for non-2xx status codes
+            except requests.exceptions.RequestException as e:
+                print(f"An error occurred while creating the branch: {e}")
 
             if create_branch_response.status_code != 201:
                 raise Exception(f"Failed to create branch '{branch_name}' in the GitHub repository. Status code: {create_branch_response.status_code}")
@@ -259,7 +263,7 @@ def main():
                                                 print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
                                                 response = get_existing_file_response
 
-                                            print("New private package version asset created successfully.")
+                                            print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
                                             sns_response = sns_client.publish(
                                                 TopicArn=sns_topic_arn,
                                                 Subject=f"{external_package_name} Package Approved",

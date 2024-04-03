@@ -37,7 +37,6 @@ def format_findings(findings):
     return formatted_message
 
 def format_private_package_response(response):
-    print("format_private_package_response")
 
     parsed_response = {
         "format": response.get("format"),
@@ -169,7 +168,7 @@ def main():
                                                 assetSHA256=asset_sha256,
                                             )
 
-                                            print("New private package version asset created successfully.")
+                                            print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
                                             formatted_message = format_private_package_response(package_version_response)
 
                                             # Publish to SNS and capture response
