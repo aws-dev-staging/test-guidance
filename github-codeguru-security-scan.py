@@ -57,17 +57,18 @@ def put_file_to_github(url, github_token, github_username, github_email, content
             headers=headers
         )
 
+        # Branch does not exist, create it
         if get_branch_response.status_code == 404:
-            # Branch does not exist, create it
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
+
             create_branch_response = requests.post(
                 f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
                 headers=headers,
                 json={
                     "ref": f"refs/heads/{branch_name}",
-                    "sha": "<commit_sha_of_existing_branch_or_default>"
                 }
             )
+
             if create_branch_response.status_code != 201:
                 raise Exception(f"Failed to create branch '{branch_name}' in the GitHub repository. Status code: {create_branch_response.status_code}")
             print(f"Branch '{branch_name}' created successfully.")
@@ -261,9 +262,9 @@ def main():
                                             print("New private package version asset created successfully.")
                                             sns_response = sns_client.publish(
                                                 TopicArn=sns_topic_arn,
-                                                Subject=f"{approved_package} Package Approved",
+                                                Subject=f"{external_package_name} Package Approved",
                                                 Message=f"GitHub private package details:\n\n"
-                                                        f"Package Name: {approved_package}\n"
+                                                        f"Package Name: {external_package_name}\n"
                                                         f"GitHub Repository: {github_repo}\n"
                                                         f"Owner: {github_owner}\n"
                                                         f"Pushed by: {github_username}\n"
