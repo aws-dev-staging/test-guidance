@@ -99,6 +99,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                 print(f"An error occurred while creating the branch: {e}")
 
         print(f"Branch '{branch_name}' created successfully.")
+        
         # Define the path to the package file in the repository
         package_path = f"packages/{branch_name}"
 
@@ -155,7 +156,6 @@ def sanitize_package_name(name):
     return re.sub(r'[^a-zA-Z0-9-_$:.]', '', name)
 
 def main():
-    
     try:
         # Instantiate boto3 clients
         codeguru_security_client = boto3.client('codeguru-security')
@@ -263,53 +263,51 @@ def main():
                                             commit_message = "Add private package - " +  zip_file_name
                                             url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
-                                            # Query existing file SHA
-                                            get_existing_file_response = requests.get(
-                                                url,
+                                            # Query existing file SHA from the external_package_name branch
+                                            branch_name = external_package_name  # Use the package name as the branch name
+                                            get_branch_response = requests.get(
+                                                f"https://api.github.com/repos/{github_owner}/{github_repo}/branches/{branch_name}",
                                                 headers={
-                                                    "Accept": "application/vnd.github.v3+json",
+                                                    "Accept": "application/vnd.github+json",
                                                     "Authorization": f"Bearer {github_token}"
                                                 }
                                             )
 
-                                            print("Entering Danger Zone.")
-                                            if get_existing_file_response.status_code == 200:
-                                                existing_file_info = get_existing_file_response.json()
-                                                existing_file_sha = existing_file_info.get('sha')
+                                            if get_branch_response.status_code == 200:
+                                                branch_info = get_branch_response.json()
+                                                existing_file_sha = branch_info.get('commit', {}).get('sha')
 
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                            elif get_existing_file_response.status_code == 404:
-                                                # If file not found, call put_file_to_github without SHA
-                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, None)
                                             else:
-                                                print(f"Failed to get existing file from GitHub. Status code: {get_existing_file_response.status_code}")
-                                                response = get_existing_file_response
+                                                print(f"Failed to get branch '{branch_name}' from GitHub. Status code: {get_branch_response.status_code}")
+                                                continue  # Skip pushing to GitHub if branch information cannot be retrieved
+                                                
+                                            # Handle response
+                                            if response:
+                                                print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                my_data = response.json()
+                                                print("\n\nMy Data - " + str(my_data))
+                                                sns_response = sns_client.publish(
+                                                    TopicArn=sns_topic_arn,
+                                                    Subject=f"{external_package_name} Package Approved",
+                                                    Message=f"GitHub private package details:\n\n"
+                                                            f"Package Name: {external_package_name}\n"
+                                                            f"GitHub Repository: {github_repo}\n"
+                                                            f"Owner: {github_owner}\n"
+                                                            f"Pushed by: {github_username}\n"
+                                                            f"Commit Message: {commit_message}\n"
+                                                            f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
+                                                            f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
+                                                            f"Status Code: {response.status_code}\n"
+                                                            f"Response Body: {response.text}\n"
+                                                )
+                                                print("SNS published successfully.")
+                                                print("SNS response:", sns_response)
+                                                print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
 
-                                            print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
-                                            
-                                            my_data = response.json()
-                                            print("\n\nMy Data - " + str(my_data))
-                                            sns_response = sns_client.publish(
-                                                TopicArn=sns_topic_arn,
-                                                Subject=f"{external_package_name} Package Approved",
-                                                Message=f"GitHub private package details:\n\n"
-                                                        f"Package Name: {external_package_name}\n"
-                                                        f"GitHub Repository: {github_repo}\n"
-                                                        f"Owner: {github_owner}\n"
-                                                        f"Pushed by: {github_username}\n"
-                                                        f"Commit Message: {commit_message}\n"
-                                                        f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
-                                                        f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
-                                                        f"Status Code: {response.status_code}\n"
-                                                        f"Response Body: {response.text}\n"
-                                            )
-
-                                            print("SNS published successfully.")
-                                            print("SNS response:", sns_response)
-                                            print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
-
-                                            print("SNS published successfully.")
+                                            else:
+                                                print("Failed to push file to GitHub.")
 
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
@@ -341,3 +339,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
