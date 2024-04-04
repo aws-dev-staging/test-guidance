@@ -80,7 +80,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         if get_branch_response.status_code == 404:
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
 
-            try:
+            '''try:
                 # GitHub API endpoint for getting the latest commit on the default branch
                 default_branch = "main"
                 default_branch_url = f"https://api.github.com/repos/{github_owner}/{github_repo}/commits/{branch_name}"
@@ -103,7 +103,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                 print(f"SHA of the latest commit on '{default_branch}' branch: {default_branch_sha}")
 
             except requests.exceptions.RequestException as e:
-                print(f"An error occurred while retrieving the SHA of the default branch: {e}")
+                print(f"An error occurred while retrieving the SHA of the default branch: {e}")'''
 
             try:
                 # Create the new branch based on the latest commit SHA
@@ -111,8 +111,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                     f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
                     headers=headers,
                     json={
-                        "ref": f"refs/heads/{branch_name}",
-                        "sha": default_branch_sha
+                        "ref": f"refs/heads/{branch_name}"
                     }
                 )
                 create_branch_response.raise_for_status()
