@@ -124,13 +124,14 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         try:
             print(f"Pushing file to GitHub branch '{branch_name}'...")
             response = requests.put(url, headers=headers, json=data)
-            print(f"Private internal package pushed to GitHub branch '{branch_name}' successfully.")
+            print(f"Private internal package, {branch_name}, pushed to GitHub branch, {branch_name}, successfully.")
         except requests.exceptions.RequestException as e:
             print(f"Failed to push file to GitHub branch '{branch_name}'. Status code: {response.status_code}")
             print("Response content: ", response.text)
 
-    except Exception as error:
-        print(f"Failed to push file to GitHub branch '{branch_name}' due to an exception: {error}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to push file to GitHub branch due to an exception: {error}")
+
     finally:
         return response
 
@@ -171,15 +172,16 @@ def main():
             
             package_reader = csv.reader(csvfile)
             for row in package_reader:
-                external_package_name, external_package_url = row
-                external_package_name = sanitize_package_name(external_package_name)
-                print(f"Processing package: {external_package_name} from {external_package_url}")
 
-                # Download external package repository
-                zip_file_name = f"{external_package_name}.zip"
-                download_response = requests.get(external_package_url)
+                try:
+                    external_package_name, external_package_url = row
+                    external_package_name = sanitize_package_name(external_package_name)
+                    print(f"Processing package: {external_package_name} from {external_package_url}")
+
+                    # Download external package repository
+                    zip_file_name = f"{external_package_name}.zip"
+                    download_response = requests.get(external_package_url)
                 
-                if download_response.status_code == 200:
                     with open(zip_file_name, "wb") as zip_file:
                         zip_file.write(download_response.content)
                     
@@ -252,65 +254,64 @@ def main():
                                         print("No medium or high severities found. Pushing to GitHub repository...")
 
                                         if github_token:
-                                            print("GitHub token found. Attempting to push package to GitHub repository...")
-                                            zip_file_name = f"{external_package_name}.zip"
+                                            try:
+                                                print("GitHub token found. Attempting to push package to GitHub repository...")
+                                                zip_file_name = f"{external_package_name}.zip"
 
-                                            # Load file content
-                                            with open(zip_file_name, "rb") as file:
-                                                content = file.read()
+                                                # Load file content
+                                                with open(zip_file_name, "rb") as file:
+                                                    content = file.read()
 
-                                            # Encode content to base64
-                                            content_base64 = base64.b64encode(content).decode('utf-8')
+                                                # Encode content to base64
+                                                content_base64 = base64.b64encode(content).decode('utf-8')
 
-                                            # GitHub repository details
-                                            commit_message = "Add private package - " +  zip_file_name
-                                            url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
+                                                # GitHub repository details
+                                                commit_message = "Add private package - " +  zip_file_name
+                                                url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
-                                            # Query existing file SHA from the external_package_name branch
-                                            branch_name = external_package_name  # Use the package name as the branch name
-                                            get_branch_response = requests.get(
-                                                f"https://api.github.com/repos/{github_owner}/{github_repo}/branches/{branch_name}",
-                                                headers={
-                                                    "Accept": "application/vnd.github+json",
-                                                    "Authorization": f"Bearer {github_token}"
-                                                }
-                                            )
+                                                # Query existing file SHA from the external_package_name branch
+                                                branch_name = external_package_name  # Use the package name as the branch name
+                                                get_branch_response = requests.get(
+                                                    f"https://api.github.com/repos/{github_owner}/{github_repo}/branches/{branch_name}",
+                                                    headers={
+                                                        "Accept": "application/vnd.github+json",
+                                                        "Authorization": f"Bearer {github_token}"
+                                                    }
+                                                )
 
-                                            if get_branch_response.status_code == 200:
                                                 branch_info = get_branch_response.json()
                                                 existing_file_sha = branch_info.get('commit', {}).get('sha')
 
                                                 # Send the request to GitHub API
-                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                            else:
-                                                print(f"Failed to get branch '{branch_name}' from GitHub. Status code: {get_branch_response.status_code}")
-                                                continue  # Skip pushing to GitHub if branch information cannot be retrieved
-                                                
-                                            # Handle response
-                                            if response:
-                                                print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
-                                                my_data = response.json()
-                                                print("\n\nMy Data - " + str(my_data))
-                                                sns_response = sns_client.publish(
-                                                    TopicArn=sns_topic_arn,
-                                                    Subject=f"{external_package_name} Package Approved",
-                                                    Message=f"GitHub private package details:\n\n"
-                                                            f"Package Name: {external_package_name}\n"
-                                                            f"GitHub Repository: {github_repo}\n"
-                                                            f"Owner: {github_owner}\n"
-                                                            f"Pushed by: {github_username}\n"
-                                                            f"Commit Message: {commit_message}\n"
-                                                            f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
-                                                            f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
-                                                            f"Status Code: {response.status_code}\n"
-                                                            f"Response Body: {response.text}\n"
-                                                )
-                                                print("SNS published successfully.")
-                                                print("SNS response:", sns_response)
-                                                print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+                                                try:
+                                                    response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
+                                                    my_data = response.json()
+                                                    print("\n\nMy Data - " + str(my_data))
 
-                                            else:
-                                                print("Failed to push file to GitHub.")
+                                                    sns_response = sns_client.publish(
+                                                        TopicArn=sns_topic_arn,
+                                                        Subject=f"{external_package_name} Package Approved",
+                                                        Message=f"GitHub private package details:\n\n"
+                                                                f"Package Name: {external_package_name}\n"
+                                                                f"GitHub Repository: {github_repo}\n"
+                                                                f"Owner: {github_owner}\n"
+                                                                f"Pushed by: {github_username}\n"
+                                                                f"Commit Message: {commit_message}\n"
+                                                                f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
+                                                                f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
+                                                                f"Status Code: {response.status_code}\n"
+                                                                f"Response Body: {response.text}\n"
+                                                    )
+                                                    print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                    print("SNS response:", sns_response)
+                                                    print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+
+                                                except Exception as error:
+                                                    print(f"Failed to push file to GitHub: {error}")
+
+                                            except Exception as error:
+                                                print(f"Failed to get branch from GitHub: {error}")
+                                                continue  # Skip pushing to GitHub if branch information cannot be retrieved
 
                                     else:
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
@@ -330,12 +331,10 @@ def main():
                                     print("No findings found.")
 
                     except Exception as error:
-                        print(f"Action Failed, reason: {error}")
-                    
-                    # End CodeGuru Security scan block
+                        print(f"Issue performing Amazon CodeGuru Security scan: {error}")
 
-                else:
-                    print(f"Failed to download package from {external_package_url}")
+                except Exception as error:
+                    print(f"Failed to download package: {error}")
 
     except Exception as error:
         print(f"Action Failed, reason: {error}")
