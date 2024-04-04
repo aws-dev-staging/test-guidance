@@ -96,8 +96,9 @@ def put_file_to_github(url, github_token, github_username, github_email, content
 
                 # Extract the SHA of the latest commit
                 default_branch_data = default_branch_response.json()
-                data["sha"] = default_branch_data["sha"]
-                print(f"SHA of the latest commit on '{default_branch}' branch: {data["sha"]}")
+                default_branch_sha = default_branch_data["sha"]
+                data["sha"] = default_branch_sha
+                print(f"SHA of the latest commit on '{default_branch}' branch: {default_branch_sha}")
 
             except requests.exceptions.RequestException as e:
                 print(f"An error occurred while retrieving the SHA of the default branch: {e}")
@@ -109,7 +110,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                     headers=headers,
                     json={
                         "ref": f"refs/heads/{branch_name}",
-                        "sha": data["sha"]
+                        "sha": default_branch_sha
                     }
                 )
                 create_branch_response.raise_for_status()
@@ -127,7 +128,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         except requests.exceptions.RequestException as e:
             print(f"Failed to push file to GitHub branch '{branch_name}'. Status code: {response.status_code}")
             print("Response content: ", response.text)
-            
+
     except Exception as error:
         print(f"Failed to push file to GitHub branch '{branch_name}' due to an exception: {error}")
     finally:
