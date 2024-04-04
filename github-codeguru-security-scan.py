@@ -56,6 +56,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
     }
 
     if existing_file_sha:
+        print("Assigned existing_file_sha 1 = " + str(existing_file_sha))
         data["sha"] = existing_file_sha
 
     try:
@@ -97,6 +98,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                 # Extract the SHA of the latest commit
                 default_branch_data = default_branch_response.json()
                 default_branch_sha = default_branch_data["sha"]
+                print("Assigned default_branch_sha = " + str(default_branch_sha))
                 data["sha"] = default_branch_sha
                 print(f"SHA of the latest commit on '{default_branch}' branch: {default_branch_sha}")
 
@@ -281,6 +283,7 @@ def main():
 
                                                 branch_info = get_branch_response.json()
                                                 existing_file_sha = branch_info.get('commit', {}).get('sha')
+                                                print("Assigned existing_file_sha 2 = " + str(existing_file_sha))
 
                                                 # Send the request to GitHub API
                                                 try:
