@@ -287,14 +287,19 @@ def main():
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
                                                 response_json = response.json()
+
+                                                print("HERE3")
                                                 
                                                 # Extracting relevant information from the JSON response
-                                                commit_message = response_json['commit']['message']
-                                                commit_author = response_json['commit']['author']['name']
-                                                commit_date = response_json['commit']['author']['date']
-                                                file_name = response_json['content']['name']
-                                                file_size = response_json['content']['size']
-                                                file_download_url = response_json['content']['download_url']
+                                                commit_message = response_json.get('commit', {}).get('message')
+                                                commit_author = response_json.get('commit', {}).get('author', {}).get('name')
+                                                commit_date = response_json.get('commit', {}).get('author', {}).get('date')
+                                                content = response_json.get('content', {})
+                                                file_name = content.get('name')
+                                                file_size = content.get('size')
+                                                file_download_url = content.get('download_url')
+
+                                                print("HERE4")
 
                                                 # Constructing a meaningful message
                                                 message = f"New package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
