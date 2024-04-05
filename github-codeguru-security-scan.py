@@ -284,25 +284,24 @@ def main():
                                                 try:
                                                     response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
                                                     my_data = response.json()
-                                                    print("\n\nMy Data - " + str(my_data))
+                                                    
+                                                    # Extracting relevant information from the JSON response
+                                                    commit_message = response_json['commit']['message']
+                                                    commit_author = response_json['commit']['author']['name']
+                                                    commit_date = response_json['commit']['author']['date']
+                                                    file_name = response_json['content']['name']
+                                                    file_size = response_json['content']['size']
+                                                    file_download_url = response_json['content']['download_url']
+
+                                                    # Constructing a meaningful message
+                                                    message = f"New package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
 
                                                     sns_response = sns_client.publish(
                                                         TopicArn=sns_topic_arn,
                                                         Subject=f"{external_package_name} Package Approved",
-                                                        Message=f"GitHub private package details:\n\n"
-                                                                f"Package Name: {external_package_name}\n"
-                                                                f"GitHub Repository: {github_repo}\n"
-                                                                f"Owner: {github_owner}\n"
-                                                                f"Pushed by: {github_username}\n"
-                                                                f"Commit Message: {commit_message}\n"
-                                                                f"Commit URL: {response.get('content', {}).get('html_url', 'N/A')}\n"
-                                                                f"SHA: {response.get('content', {}).get('sha', 'N/A')}\n"
-                                                                f"Status Code: {response.status_code}\n"
-                                                                f"Response Body: {response.text}\n"
+                                                        Message=message
                                                     )
                                                     print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
-                                                    print("SNS response:", sns_response)
-                                                    print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
 
                                                 except Exception as error:
                                                     print(f"Failed to push file to GitHub: {error}")
