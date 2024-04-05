@@ -80,10 +80,10 @@ def put_file_to_github(url, github_token, github_username, github_email, content
         if get_branch_response.status_code == 404:
             print(f"Branch '{branch_name}' does not exist. Creating the branch...")
 
-            '''try:
-                # GitHub API endpoint for getting the latest commit on the default branch
-                default_branch = "main"
-                default_branch_url = f"https://api.github.com/repos/{github_owner}/{github_repo}/commits/{branch_name}"
+            try:
+                # GitHub API endpoint for getting the reference of the default branch
+                default_branch = "main"  # Replace with the name of your default branch
+                default_branch_url = f"https://api.github.com/repos/{github_owner}/{github_repo}/git/ref/heads/{default_branch}"
 
                 # Headers containing authorization token and specifying API version
                 headers = {
@@ -91,34 +91,30 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                     "Accept": "application/vnd.github.v3+json"
                 }
 
-                # Send GET request to retrieve information about the latest commit on the default branch
+                # Send GET request to retrieve information about the default branch reference
                 default_branch_response = requests.get(default_branch_url, headers=headers)
                 default_branch_response.raise_for_status()
 
-                # Extract the SHA of the latest commit
+                # Extract the SHA of the default branch reference
                 default_branch_data = default_branch_response.json()
-                default_branch_sha = default_branch_data["sha"]
-                print("Assigned default_branch_sha = " + str(default_branch_sha))
-                data["sha"] = default_branch_sha
+                default_branch_sha = default_branch_data["object"]["sha"]
                 print(f"SHA of the latest commit on '{default_branch}' branch: {default_branch_sha}")
 
-            except requests.exceptions.RequestException as e:
-                print(f"An error occurred while retrieving the SHA of the default branch: {e}")'''
-
-            try:
                 # Create the new branch based on the latest commit SHA
                 create_branch_response = requests.post(
                     f"https://api.github.com/repos/{github_owner}/{github_repo}/git/refs",
                     headers=headers,
                     json={
-                        "ref": f"refs/heads/{branch_name}"
+                        "ref": f"refs/heads/{branch_name}",
+                        "sha": default_branch_sha  # Specify the SHA of the commit for the new branch
                     }
                 )
                 create_branch_response.raise_for_status()
                 print(f"Branch '{branch_name}' created successfully.")
 
             except requests.exceptions.RequestException as e:
-                print(f"An error occurred while creating the branch: {e}")
+                print(f"An error occurred: {e}")
+
         else:
             print(f"Branch '{branch_name}' already exists.")
 
