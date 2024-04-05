@@ -283,7 +283,7 @@ def main():
                                                 # Send the request to GitHub API
                                                 try:
                                                     response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                                    my_data = response.json()
+                                                    response_json = response.json()
                                                     
                                                     # Extracting relevant information from the JSON response
                                                     commit_message = response_json['commit']['message']
@@ -311,7 +311,6 @@ def main():
                                                 continue  # Skip pushing to GitHub if branch information cannot be retrieved
 
                                     else:
-                                        print("Medium or high severities found. An email has been sent to the requestor with additional details.")
                                         formatted_message = format_findings(get_findings_response["findings"])
 
                                         # Publish to SNS and capture response
@@ -320,10 +319,8 @@ def main():
                                             Subject=f"{external_package_name} Security Findings Report",
                                             Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
-                                        
-                                        print("SNS published successfully.")
-                                        print("SNS response:", sns_response)
-                                        print("SNS status code:", sns_response['ResponseMetadata']['HTTPStatusCode'])
+                                        print("Medium or high severities found. An email has been sent to the requestor with additional details.")
+                                
                                 else:
                                     print("No findings found.")
 
