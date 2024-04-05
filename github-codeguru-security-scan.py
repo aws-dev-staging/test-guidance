@@ -286,7 +286,7 @@ def main():
 
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                                print("RESPONSE = " + str(response))
+                                                print("RESPONSE = " + str(response.content))
                                                 response_json = response.json()
 
                                                 print("HERE3")
