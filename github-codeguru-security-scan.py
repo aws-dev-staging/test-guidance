@@ -56,7 +56,6 @@ def put_file_to_github(url, github_token, github_username, github_email, content
     }
 
     if existing_file_sha:
-        print("Assigned existing_file_sha 1 = " + str(existing_file_sha))
         data["sha"] = existing_file_sha
 
     try:
@@ -116,18 +115,18 @@ def put_file_to_github(url, github_token, github_username, github_email, content
                 print(f"An error occurred: {e}")
 
         else:
-            print(f"Branch '{branch_name}' already exists.")
+            print(f"Branch '{branch_name}' already exists...")
 
         try:
             print(f"Pushing file to GitHub branch '{branch_name}'...")
             response = requests.put(url, headers=headers, json=data)
-            print(f"Private internal package, {branch_name}, pushed to GitHub branch, {branch_name}, successfully.")
+            print(f"Private internal package '{branch_name}' pushed to matching GitHub branch successfully.")
+        
         except requests.exceptions.RequestException as e:
-            print(f"Failed to push file to GitHub branch '{branch_name}'. Status code: {response.status_code}")
-            print("Response content: ", response.text)
+            print(f"Failed to push file to GitHub branch due to an exception: {e}")
 
     except requests.exceptions.RequestException as e:
-        print(f"Failed to push file to GitHub branch due to an exception: {error}")
+        print(f"GitHub exception: {error}")
 
     finally:
         return response
@@ -276,39 +275,40 @@ def main():
                                                     }
                                                 )
 
+                                                print("-- Getting Branch Info --")
                                                 branch_info = get_branch_response.json()
-                                                existing_file_sha = branch_info.get('commit', {}).get('sha')
-                                                print("Assigned existing_file_sha 2 = " + str(existing_file_sha))
+                                                if 'commit' in branch_info and 'sha' in branch_info['commit']:
+                                                    print("HERE1")
+                                                    existing_file_sha = branch_info['commit']['sha']
+                                                else:
+                                                    print("HERE2")
+                                                    existing_file_sha = None  # Set to None if SHA is not found or response structure is unexpected
 
                                                 # Send the request to GitHub API
-                                                try:
-                                                    response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                                    response_json = response.json()
-                                                    
-                                                    # Extracting relevant information from the JSON response
-                                                    commit_message = response_json['commit']['message']
-                                                    commit_author = response_json['commit']['author']['name']
-                                                    commit_date = response_json['commit']['author']['date']
-                                                    file_name = response_json['content']['name']
-                                                    file_size = response_json['content']['size']
-                                                    file_download_url = response_json['content']['download_url']
+                                                response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
+                                                response_json = response.json()
+                                                
+                                                # Extracting relevant information from the JSON response
+                                                commit_message = response_json['commit']['message']
+                                                commit_author = response_json['commit']['author']['name']
+                                                commit_date = response_json['commit']['author']['date']
+                                                file_name = response_json['content']['name']
+                                                file_size = response_json['content']['size']
+                                                file_download_url = response_json['content']['download_url']
 
-                                                    # Constructing a meaningful message
-                                                    message = f"New package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
+                                                # Constructing a meaningful message
+                                                message = f"New package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
 
-                                                    sns_response = sns_client.publish(
-                                                        TopicArn=sns_topic_arn,
-                                                        Subject=f"{external_package_name} Package Approved",
-                                                        Message=message
-                                                    )
-                                                    print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
-
-                                                except Exception as error:
-                                                    print(f"Failed to push file to GitHub: {error}")
+                                                print("-- SNS Client Publish --")
+                                                sns_response = sns_client.publish(
+                                                    TopicArn=sns_topic_arn,
+                                                    Subject=f"{external_package_name} Package Approved",
+                                                    Message=message
+                                                )
+                                                print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
 
                                             except Exception as error:
-                                                print(f"Failed to get branch from GitHub: {error}")
-                                                continue  # Skip pushing to GitHub if branch information cannot be retrieved
+                                                print(f"Failed to retrieve branch details from GitHub: {error}")
 
                                     else:
                                         formatted_message = format_findings(get_findings_response["findings"])
