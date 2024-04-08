@@ -280,16 +280,16 @@ def main():
                                                 branch_info = get_branch_response.json()
                                                 print("\n\nbranch_info = " + str(branch_info))
 
-                                                if 'commit' in branch_info and 'sha' in branch_info['commit']:
-                                                    existing_file_sha = branch_info['commit']['sha']
+                                                if 'tree' in branch_info and 'sha' in branch_info['tree']:
+                                                    existing_file_sha = branch_info['tree']['sha']
                                                     print("main existing_file_sha1 = " + str(existing_file_sha))
-                                                else:
-                                                    existing_file_sha = None  # Set to None if SHA is not found or response structure is unexpected
+                                                else 
+                                                    existing_file_sha = None
                                                     print("main existing_file_sha2")
 
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                                print("RESPONSE = " + str(response.content))
+                                                print("response.content = " + str(response.content))
                                                 response_json = response.json()
 
                                                 print("HERE3")
