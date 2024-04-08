@@ -280,12 +280,21 @@ def main():
                                                 branch_info = get_branch_response.json()
                                                 print("\n\nbranch_info = " + str(branch_info))
 
-                                                if 'tree' in branch_info and 'sha' in branch_info['tree']:
-                                                    existing_file_sha = branch_info['tree']['sha']
-                                                    print("main existing_file_sha1 = " + str(existing_file_sha))
+                                                # Check if 'commit' key exists in the JSON response
+                                                if 'commit' in branch_info:
+                                                    # Check if 'commit' is a dictionary
+                                                    if isinstance(branch_info['commit'], dict):
+                                                        # Check if 'sha' exists in the 'commit' dictionary
+                                                        if 'sha' in branch_info['commit']:
+                                                            existing_file_sha = branch_info['commit']['sha']
+                                                            print("main existing_file_sha1 = " + str(existing_file_sha))
+                                                        else:
+                                                            existing_file_sha = None
+                                                            print("main existing_file_sha2")
+                                                    else:
+                                                        print("'commit' key is not a dictionary")
                                                 else:
-                                                    existing_file_sha = None
-                                                    print("main existing_file_sha2")
+                                                    print("'commit' key does not exist")
 
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
