@@ -283,7 +283,7 @@ def main():
                                                 if 'tree' in branch_info and 'sha' in branch_info['tree']:
                                                     existing_file_sha = branch_info['tree']['sha']
                                                     print("main existing_file_sha1 = " + str(existing_file_sha))
-                                                else 
+                                                else:
                                                     existing_file_sha = None
                                                     print("main existing_file_sha2")
 
