@@ -282,15 +282,14 @@ def main():
 
                                                 # Check if 'commit' key exists in the JSON response
                                                 if 'commit' in branch_info:
-                                                    # Check if 'commit' is a dictionary
-                                                    if isinstance(branch_info['commit'], dict):
-                                                        # Check if 'sha' exists in the 'commit' dictionary
-                                                        if 'sha' in branch_info['commit']:
-                                                            existing_file_sha = branch_info['commit']['sha']
-                                                            print("main existing_file_sha1 = " + str(existing_file_sha))
-                                                        else:
-                                                            existing_file_sha = None
-                                                            print("main existing_file_sha2")
+                                                    # Check if 'tree' exists in the 'commit' dictionary
+                                                    if 'tree' in branch_info['commit']:
+                                                            # Check if 'sha' exists in the 'tree' dictionary
+                                                            if 'sha' in branch_info['commit']['tree']:
+                                                                tree_sha = branch_info['commit']['tree']['sha']
+                                                                print("Tree SHA: ", tree_sha)
+                                                            else:
+                                                                print("'sha' key does not exist in the 'tree' dictionary")
                                                     else:
                                                         print("'commit' key is not a dictionary")
                                                 else:
@@ -315,7 +314,7 @@ def main():
                                                 print("HERE4")
 
                                                 # Constructing a meaningful message
-                                                message = f"New package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
+                                                message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
 
                                                 print("-- SNS Client Publish --")
                                                 sns_response = sns_client.publish(
