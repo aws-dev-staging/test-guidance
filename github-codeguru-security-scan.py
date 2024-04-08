@@ -277,8 +277,9 @@ def main():
                                                     }
                                                 )
 
-                                                print("-- Getting Branch Info --")
                                                 branch_info = get_branch_response.json()
+                                                print("\n\nbranch_info = " + str(branch_info))
+
                                                 if 'commit' in branch_info and 'sha' in branch_info['commit']:
                                                     existing_file_sha = branch_info['commit']['sha']
                                                     print("main existing_file_sha1 = " + str(existing_file_sha))
