@@ -56,6 +56,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
     }
 
     if existing_file_sha:
+        print("put_file_to_github existing_file_sha = " + str(existing_file_sha))
         data["sha"] = existing_file_sha
 
     try:
@@ -119,6 +120,7 @@ def put_file_to_github(url, github_token, github_username, github_email, content
 
         try:
             print(f"Pushing file to GitHub branch '{branch_name}'...")
+            print("put_file_to_github existing_file_sha = " + str(existing_file_sha))
             response = requests.put(url, headers=headers, json=data)
             print(f"Private internal package '{branch_name}' pushed to matching GitHub branch successfully.")
         
@@ -278,11 +280,11 @@ def main():
                                                 print("-- Getting Branch Info --")
                                                 branch_info = get_branch_response.json()
                                                 if 'commit' in branch_info and 'sha' in branch_info['commit']:
-                                                    print("HERE1")
                                                     existing_file_sha = branch_info['commit']['sha']
+                                                    print("main existing_file_sha1 = " + str(existing_file_sha))
                                                 else:
-                                                    print("HERE2")
                                                     existing_file_sha = None  # Set to None if SHA is not found or response structure is unexpected
+                                                    print("main existing_file_sha2")
 
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
