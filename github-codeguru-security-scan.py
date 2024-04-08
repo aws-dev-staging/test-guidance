@@ -280,16 +280,16 @@ def main():
                                                 branch_info = get_branch_response.json()
                                                 print("\n\nbranch_info = " + str(branch_info))
 
-                                                # Check if 'commit' key exists in the JSON response
                                                 if 'commit' in branch_info:
-                                                    # Check if 'tree' exists in the 'commit' dictionary
-                                                    if 'tree' in branch_info['commit']:
-                                                            # Check if 'sha' exists in the 'tree' dictionary
-                                                            if 'sha' in branch_info['commit']['tree']:
-                                                                existing_file_sha = branch_info['commit']['tree']['sha']
+                                                    if 'commit' in branch_info['commit']:
+                                                        if 'tree' in branch_info['commit']['commit']:
+                                                            if 'sha' in branch_info['commit']['commit']['tree']:
+                                                                existing_file_sha = branch_info['commit']['commit']['tree']['tree']['sha']
                                                                 print("Tree SHA: ", existing_file_sha)
                                                             else:
                                                                 print("'sha' key does not exist in the 'tree' dictionary")
+                                                        else:
+                                                            print("'tree' key is not a dictionary")
                                                     else:
                                                         print("'commit' key is not a dictionary")
                                                 else:
