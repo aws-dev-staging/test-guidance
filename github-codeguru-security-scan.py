@@ -281,11 +281,12 @@ def main():
                                                 print("\n\nbranch_info = " + str(branch_info))
 
                                                 if 'commit' in branch_info:
+                                                    existing_file_sha = branch_info['commit']['sha']
+                                                    
                                                     if 'commit' in branch_info['commit']:
                                                         if 'tree' in branch_info['commit']['commit']:
                                                             if 'sha' in branch_info['commit']['commit']['tree']:
-                                                                existing_file_sha = branch_info['commit']['commit']['tree']['sha']
-                                                                print("Tree SHA: ", existing_file_sha)
+                                                                print("Tree SHA")
                                                             else:
                                                                 print("'sha' key does not exist in the 'tree' dictionary")
                                                         else:
