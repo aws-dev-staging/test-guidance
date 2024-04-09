@@ -151,6 +151,7 @@ Resources:
                   commands:
                     - pip3 install awscli --upgrade --user
                     - pip3 install boto3 --upgrade
+                    - pip3 install PyGithub
               build:
                 commands:
                   - echo "Amazon CodeGuru Security scanning external package repository"
