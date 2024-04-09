@@ -117,6 +117,25 @@ def put_file_to_github(url, github_token, github_username, github_email, content
 
         else:
             print(f"Branch '{branch_name}' already exists...")
+            branch_info = get_branch_response.json()
+            print("\n\nbranch_info = " + str(branch_info))
+
+            if 'commit' in branch_info:
+                # Access the 'sha' value from the 'parents' list
+                existing_file_sha = branch_info['commit']['parents'][0]['sha']
+
+                if 'commit' in branch_info['commit']:
+                    if 'tree' in branch_info['commit']['commit']:
+                        if 'sha' in branch_info['commit']['commit']['tree']:
+                            print("Tree SHA")
+                        else:
+                            print("'sha' key does not exist in the 'tree' dictionary")
+                    else:
+                        print("'tree' key is not a dictionary")
+                else:
+                    print("'commit' key is not a dictionary")
+            else:
+                print("'commit' key does not exist")
 
         try:
             print(f"Pushing file to GitHub branch '{branch_name}'...")
@@ -267,41 +286,9 @@ def main():
                                                 commit_message = "Add private package - " +  zip_file_name
                                                 url = f"https://api.github.com/repos/{github_owner}/{github_repo}/contents/packages/{zip_file_name}"
 
-                                                # Query existing file SHA from the external_package_name branch
-                                                branch_name = external_package_name  # Use the package name as the branch name
-                                                get_branch_response = requests.get(
-                                                    f"https://api.github.com/repos/{github_owner}/{github_repo}/branches/{branch_name}",
-                                                    headers={
-                                                        "Accept": "application/vnd.github+json",
-                                                        "Authorization": f"Bearer {github_token}"
-                                                    }
-                                                )
-
-                                                branch_info = get_branch_response.json()
-                                                print("\n\nbranch_info = " + str(branch_info))
-
-                                                if 'commit' in branch_info:
-                                                    # Access the 'sha' value from the 'parents' list
-                                                    existing_file_sha = branch_info['commit']['parents'][0]['sha']
-
-                                                    if 'commit' in branch_info['commit']:
-                                                        if 'tree' in branch_info['commit']['commit']:
-                                                            if 'sha' in branch_info['commit']['commit']['tree']:
-                                                                print("Tree SHA")
-                                                            else:
-                                                                print("'sha' key does not exist in the 'tree' dictionary")
-                                                        else:
-                                                            print("'tree' key is not a dictionary")
-                                                    else:
-                                                        print("'commit' key is not a dictionary")
-                                                else:
-                                                    print("'commit' key does not exist")
-
                                                 # Send the request to GitHub API
                                                 response = put_file_to_github(url, github_token, github_username, github_email, content_base64, commit_message, external_package_name, existing_file_sha)
-                                                print("response.content = " + str(response.content))
                                                 response_json = response.json()
-
                                                 print("HERE3")
                                                 
                                                 # Extracting relevant information from the JSON response
