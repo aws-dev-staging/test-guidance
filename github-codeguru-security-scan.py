@@ -281,8 +281,9 @@ def main():
                                                 print("\n\nbranch_info = " + str(branch_info))
 
                                                 if 'commit' in branch_info:
-                                                    existing_file_sha = branch_info['commit']['sha']
-                                                    
+                                                    # Access the 'sha' value from the 'parents' list
+                                                    existing_file_sha = data['commit']['parents'][0]['sha']
+
                                                     if 'commit' in branch_info['commit']:
                                                         if 'tree' in branch_info['commit']['commit']:
                                                             if 'sha' in branch_info['commit']['commit']['tree']:
