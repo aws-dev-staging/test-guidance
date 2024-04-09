@@ -36,16 +36,25 @@ github = Github(github_token)
 def push_file_to_github(file_path, branch_name, commit_message, content_base64):
     try:
         repo = github.get_repo(f"{github_owner}/{github_repo}")
-        branch = repo.get_branch(branch_name)
+        
+        # Check if the branch exists, if not, create it
+        try:
+            branch = repo.get_branch(branch_name)
+            print(f"Branch '{branch_name}' already exists...")
+        except Exception as e:
+            print(f"Branch '{branch_name}' does not exist. Creating it...")
+            repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
+            branch = repo.get_branch(branch_name)
+            print(f"Branch '{branch_name}' created successfully...")
 
         # Get the content of the file if it exists
         try:
             file_content = repo.get_contents(file_path, ref=branch_name)
             existing_file_sha = file_content.sha
-            print(f"File '{file_path}' already exists in branch '{branch_name}'")
+            print(f"File '{file_path}' already exists in branch '{branch_name}'...")
         except Exception as e:
             existing_file_sha = None
-            print(f"File '{file_path}' does not exist in branch '{branch_name}'")
+            print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
 
         # Encode content to base64
         encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
@@ -55,12 +64,12 @@ def push_file_to_github(file_path, branch_name, commit_message, content_base64):
             # File already exists, update its content
             print("existing_file_sha")
             repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
-            print(f"File '{file_path}' updated in branch '{branch_name}'")
+            print(f"File '{file_path}' updated in branch '{branch_name}'...")
         else:
             # File does not exist, create a new one
             print("no existing_file_sha")
             repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
-            print(f"File '{file_path}' created in branch '{branch_name}'")
+            print(f"File '{file_path}' created in branch '{branch_name}'...")
 
     except Exception as e:
         print(f"Error pushing file to GitHub: {e}")
