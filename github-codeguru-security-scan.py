@@ -10,10 +10,13 @@ from dateutil import tz
 from datetime import datetime
 from github import Github
 
+
 # Environment Variables
 region_name = os.environ.get("AWS_REGION")
 github_repo = os.environ.get("PrivateGitHubRepo")
 github_owner = os.environ.get("PrivateGitHubOwner")
+github_username = os.environ.get("PrivateGitHubUsername")
+github_email = os.environ.get("PrivateGitHubEmail")
 github_token = os.environ.get("PrivateGitHubToken")
 sns_topic_arn = os.environ.get("SNSTopic")
 
