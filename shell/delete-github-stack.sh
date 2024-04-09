@@ -10,12 +10,12 @@ SECURITY_GROUP_ID=$(aws cloudformation describe-stack-resources --stack-name $ST
 echo "Deleting Security Group ID: $SECURITY_GROUP_ID"
 aws ec2 delete-security-group --group-id $SECURITY_GROUP_ID
 
-echo "Deleting Secrets Manager Secret: $PRIVATE_GITHUB_TOKEN_SECRET_NAME"
-echo "Deleting Secrets Manager Secret: $PRIVATE_GITHUB_EMAIL_SECRET_NAME"
-aws secretsmanager delete-secret --secret-id $PRIVATE_GITHUB_TOKEN_SECRET_NAME
-aws secretsmanager delete-secret --secret-id $PRIVATE_GITHUB_EMAIL_SECRET_NAME
-
 echo "Deleting CloudFormation Stack: $STACK_NAME"
 aws cloudformation delete-stack --stack-name $STACK_NAME
 aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
 echo "DELETE_COMPLETE"
+
+echo "Deleting Secrets Manager Secret: $PRIVATE_GITHUB_TOKEN_SECRET_NAME"
+echo "Deleting Secrets Manager Secret: $PRIVATE_GITHUB_EMAIL_SECRET_NAME"
+aws secretsmanager delete-secret --secret-id $PRIVATE_GITHUB_TOKEN_SECRET_NAME
+aws secretsmanager delete-secret --secret-id $PRIVATE_GITHUB_EMAIL_SECRET_NAME

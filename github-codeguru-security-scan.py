@@ -1,16 +1,30 @@
 import os
+import re
 import csv
+import json
 import time
+import boto3
 import base64
 import requests
+from dateutil import tz
+from datetime import datetime
 from github import Github
 
 # Environment Variables
-sns_topic_arn = os.environ.get("SNSTopic")
+region_name = os.environ.get("AWS_REGION")
 github_repo = os.environ.get("PrivateGitHubRepo")
 github_owner = os.environ.get("PrivateGitHubOwner")
 github_token = os.environ.get("PrivateGitHubToken")
-region_name = os.environ.get("AWS_REGION")
+sns_topic_arn = os.environ.get("SNSTopic")
+
+# Print environment variable values
+print("AWS_REGION: ", region_name)
+print("PrivateGitHubRepo: ", github_repo)
+print("PrivateGitHubOwner: ", github_owner)
+print("PrivateGitHubUsername: ", github_username)
+print("PrivateGitHubEmail: ", github_email)
+print("PrivateGitHubToken: ", github_token)
+print("SNSTopic: ", sns_topic_arn)
 
 # Instantiate GitHub instance
 github = Github(github_token)
@@ -68,14 +82,27 @@ def format_findings(findings):
         
     return formatted_message
 
+# Method to adjust package name
+def sanitize_package_name(name):
+    return re.sub(r'[^a-zA-Z0-9-_$:.]', '', name)
+
 def main():
+
     try:
+        # Instantiate boto3 clients
+        codeguru_security_client = boto3.client('codeguru-security')
+        codeartifact_client = boto3.client('codeartifact')
+        codebuild_client = boto3.client('codebuild')
+        secrets_manager_client = boto3.client('secretsmanager')
+        sns_client = boto3.client('sns')
+
         # Read CSV file to get external package information
         with open('external-package-request.csv', newline='') as csvfile:
             package_reader = csv.reader(csvfile)
 
             for row in package_reader:
                 external_package_name, external_package_url = row
+                external_package_name = sanitize_package_name(external_package_name)
                 print(f"Processing package: {external_package_name} from {external_package_url}...")
 
                 # Download external package repository
