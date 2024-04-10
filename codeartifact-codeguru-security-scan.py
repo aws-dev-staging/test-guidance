@@ -14,7 +14,8 @@ codeartifact_repo = os.environ.get("InternalRepository")
 sns_topic_arn = os.environ.get("SNSTopic")
 
 # Print environment variable values
-print("SNSTopic: ", sns_topic_arn)
+print("CodeArtifact Domain: ", codeartifact_repo)
+print("CodeArtifact Repo: ", codeartifact_repo)
 
 def format_findings(findings):
     formatted_message = ""
@@ -66,7 +67,7 @@ def main():
 
                     external_package_name, external_package_url = row
                     external_package_name = re.sub(r'[^\x00-\x7F]+', '', external_package_name) # Remove non-ASCII characters from the package name
-                    print(f"Processing package: {external_package_name} from {external_package_url}")
+                    print(f"\nProcessing package '{external_package_name}' from {external_package_url}")
 
                     # Download external package repository
                     zip_file_name = f"{external_package_name}.zip"
@@ -75,11 +76,11 @@ def main():
                     with open(zip_file_name, "wb") as zip_file:
                         zip_file.write(download_response.content)                    
                     
-                    print("Package downloaded successfully")
+                    print("Package downloaded successfully...")
 
                     # Perform CodeGuru Security Scans
                     try:
-                        print("Initiating Security Scan for External Package Repository: " + external_package_name)
+                        print("Initiating CodeGuru Security scan...")
 
                         # Instantiate boto3 clients
                         codeguru_security_client = boto3.client('codeguru-security')

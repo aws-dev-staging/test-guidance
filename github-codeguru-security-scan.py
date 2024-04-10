@@ -10,7 +10,6 @@ from dateutil import tz
 from datetime import datetime
 from github import Github
 
-
 # Environment Variables
 region_name = os.environ.get("AWS_REGION")
 github_repo = os.environ.get("PrivateGitHubRepo")
@@ -21,55 +20,42 @@ github_token = os.environ.get("PrivateGitHubToken")
 sns_topic_arn = os.environ.get("SNSTopic")
 
 # Print environment variable values
-print("AWS_REGION: ", region_name)
-print("PrivateGitHubRepo: ", github_repo)
-print("PrivateGitHubOwner: ", github_owner)
-print("PrivateGitHubUsername: ", github_username)
-print("PrivateGitHubEmail: ", github_email)
-print("PrivateGitHubToken: ", github_token)
-print("SNSTopic: ", sns_topic_arn)
+print("AWS REGION: ", region_name)
+print("Private GitHub Repo: ", github_repo)
+print("Private GitHub Owner: ", github_owner)
+print("Private GitHub Username: ", github_username)
+print("Private GitHub Email: ", github_email)
+print("Private GitHub Token: ", github_token)
 
 # Instantiate GitHub instance
 github = Github(github_token)
 
 # Method to push file to GitHub repo
-def push_file_to_github(file_path, branch_name, commit_message, content_base64):
+def push_file_to_github(file_path, repo, branch, commit_message, content_base64):
+
+    # Get the content of the file if it exists
     try:
-        repo = github.get_repo(f"{github_owner}/{github_repo}")
-        
-        # Check if the branch exists, if not, create it
-        try:
-            branch = repo.get_branch(branch_name)
-            print(f"Branch '{branch_name}' already exists...")
-        except Exception as e:
-            print(f"Branch '{branch_name}' does not exist. Creating it...")
-            repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
-            branch = repo.get_branch(branch_name)
-            print(f"Branch '{branch_name}' created successfully...")
+        file_content = repo.get_contents(file_path, ref=branch_name)
+        existing_file_sha = file_content.sha
+        print(f"File '{file_path}' already exists in branch '{branch_name}'...")
+    except Exception as e:
+        existing_file_sha = None
+        print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
 
-        # Get the content of the file if it exists
-        try:
-            file_content = repo.get_contents(file_path, ref=branch_name)
-            existing_file_sha = file_content.sha
-            print(f"File '{file_path}' already exists in branch '{branch_name}'...")
-        except Exception as e:
-            existing_file_sha = None
-            print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
+    # Encode content to base64
+    encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
 
-        # Encode content to base64
-        encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
-
-        # Push the file to the repository
-        if existing_file_sha:
-            # File already exists, update its content
-            print("existing_file_sha")
-            repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
-            print(f"File '{file_path}' updated in branch '{branch_name}'...")
-        else:
-            # File does not exist, create a new one
-            print("no existing_file_sha")
-            repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
-            print(f"File '{file_path}' created in branch '{branch_name}'...")
+    # Push the file to the repository
+    if existing_file_sha:
+        # File already exists, update its content
+        print("existing_file_sha")
+        repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
+        print(f"File '{file_path}' updated in branch '{branch_name}'...")
+    else:
+        # File does not exist, create a new one
+        print("no existing_file_sha")
+        repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
+        print(f"File '{file_path}' created in branch '{branch_name}'...")
 
     except Exception as e:
         print(f"Error pushing file to GitHub: {e}")
@@ -115,7 +101,7 @@ def main():
                 try:
                     external_package_name, external_package_url = row
                     external_package_name = sanitize_package_name(external_package_name)
-                    print(f"Processing package: {external_package_name} from {external_package_url}")
+                    print(f"\nProcessing package '{external_package_name}' from {external_package_url}")
 
                     # Download external package repository
                     zip_file_name = f"{external_package_name}.zip"
@@ -124,10 +110,10 @@ def main():
                     with open(zip_file_name, "wb") as zip_file:
                         zip_file.write(download_response.content)
                     
-                    print("Package downloaded successfully")
+                    print("Package downloaded successfully...")
                     # Perform CodeGuru Security Scans
                     try:
-                        print("Initiating Security Scan for External Package Repository: " + external_package_name)
+                        print("Initiating CodeGuru Security scan...")
                         
                         print("Creating CodeGuru Security Upload URL...")
                         create_url_input = {"scanName": external_package_name}
@@ -199,8 +185,21 @@ def main():
                                             file_path = f"packages/{zip_file_name}"
                                             commit_message = f"Add private package - {zip_file_name}"
 
+                                            # Check if the branch exists, if not, create it
+                                            try:
+                                                repo = github.get_repo(f"{github_owner}/{github_repo}")
+                                                
+                                                try:
+                                                    branch = repo.get_branch(branch_name)
+                                                    print(f"Branch '{branch_name}' already exists...")
+                                                except Exception as e:
+                                                    print(f"Creating new branch: '{branch_name}'...")
+                                                    repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
+                                                    branch = repo.get_branch(branch_name)
+                                                    print(f"Branch '{branch_name}' created successfully...")
+
                                             # Send the request to GitHub API
-                                            response = push_file_to_github(file_path, branch_name, commit_message, content_base64)
+                                            response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
                                             response_json = response.json()
                                             print("HERE3")
                                             
