@@ -56,7 +56,7 @@ def format_private_package_response(response):
 
 def main():
     try:
-        print("\nInitiating security scan for external package repositories")
+        print("\nInitiating security scans for external package repositories")
         # Instantiate boto3 clients
         codeartifact_client = boto3.client('codeartifact')
         codeguru_security_client = boto3.client('codeguru-security')

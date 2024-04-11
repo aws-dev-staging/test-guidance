@@ -31,31 +31,34 @@ print("Private GitHub Token: ", github_token)
 github = Github(github_token)
 
 # Method to push file to GitHub repo
-def push_file_to_github(file_path, repo, branch, commit_message, content_base64):
-
-    # Get the content of the file if it exists
+def push_file_to_github(file_path, repo, branch_name, commit_message, content_base64):
     try:
-        file_content = repo.get_contents(file_path, ref=branch_name)
-        existing_file_sha = file_content.sha
-        print(f"File '{file_path}' already exists in branch '{branch_name}'...")
+        # Get the content of the file if it exists
+        try:
+            file_content = repo.get_contents(file_path, ref=branch_name)
+            existing_file_sha = file_content.sha
+            print(f"File '{file_path}' already exists in branch '{branch_name}'...")
+        except Exception as e:
+            existing_file_sha = None
+            print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
+
+        # Encode content to base64
+        encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
+
+        # Push the file to the repository
+        if existing_file_sha:
+            # File already exists, update its content
+            print("existing_file_sha")
+            repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
+            print(f"File '{file_path}' updated in branch '{branch_name}'...")
+        else:
+            # File does not exist, create a new one
+            print("no existing_file_sha")
+            repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
+            print(f"File '{file_path}' created in branch '{branch_name}'...")
+
     except Exception as e:
-        existing_file_sha = None
-        print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
-
-    # Encode content to base64
-    encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
-
-    # Push the file to the repository
-    if existing_file_sha:
-        # File already exists, update its content
-        print("existing_file_sha")
-        repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
-        print(f"File '{file_path}' updated in branch '{branch_name}'...")
-    else:
-        # File does not exist, create a new one
-        print("no existing_file_sha")
-        repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
-        print(f"File '{file_path}' created in branch '{branch_name}'...")
+        print(f"Error pushing file to GitHub: {e}")
 
 # Method to format findings for SNS email readability
 def format_findings(findings):
@@ -83,7 +86,7 @@ def sanitize_package_name(name):
 
 def main():
     try:
-        print("\nInitiating security scan for external package repositories")
+        print("\nInitiating security scans for external package repositories")
         # Instantiate boto3 clients
         codeartifact_client = boto3.client('codeartifact')
         codeguru_security_client = boto3.client('codeguru-security')
@@ -193,6 +196,7 @@ def main():
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
                                                     repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
+                                                    time.sleep(3)
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' created successfully...")
 
