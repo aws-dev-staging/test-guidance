@@ -199,9 +199,11 @@ def main():
                                                     print(f"Creating new branch: '{branch_name}'...")
                                                     try:
                                                         # Create a reference to the default branch if it exists, otherwise use 'main'
-                                                        default_branch_ref = f"refs/heads/{default_branch}" if default_branch else "refs/heads/main"
+                                                        default_branch_ref = default_branch if default_branch else "main"
                                                         print("default_branch_ref = " + str(default_branch_ref))
-                                                        repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=default_branch_ref.commit.sha)
+                                                        source_branch = repo.get_branch(default_branch_ref)
+                                                        print("source_branch = " + str(source_branch))
+                                                        repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=source_branch.commit.sha)
                                                         time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
                                                         
                                                         branch = repo.get_branch(branch_name)
