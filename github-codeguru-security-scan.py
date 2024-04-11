@@ -183,11 +183,11 @@ def main():
 
                                             # Check if the branch exists, if not, create it
                                             try:
-                                                print("HERE1")
                                                 repo = github.get_repo(f"{github_owner}/{github_repo}")
-                                                print("HERE2")
+                                                print("repo = " + str(repo))
                                                 
                                                 try:
+                                                    print("HERE1")
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' already exists...")
                                                 except Exception as e:
@@ -199,7 +199,7 @@ def main():
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
                                                 response_json = response.json()
-                                                print("HERE3")
+                                                print("HERE2")
                                                 
                                                 # Extracting relevant information from the JSON response
                                                 commit_message = response_json.get('commit', {}).get('message')
@@ -209,7 +209,7 @@ def main():
                                                 file_name = content.get('name')
                                                 file_size = content.get('size')
                                                 file_download_url = content.get('download_url')
-                                                print("HERE4")
+                                                print("HERE3")
 
                                                 # Constructing a meaningful message
                                                 message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
