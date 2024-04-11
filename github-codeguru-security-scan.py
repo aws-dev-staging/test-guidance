@@ -83,9 +83,9 @@ def sanitize_package_name(name):
 
 def main():
     try:
+        print("\nInitiating security scan for external package repositories")
         # Instantiate boto3 clients
         codeartifact_client = boto3.client('codeartifact')
-        codebuild_client = boto3.client('codebuild')
         codeguru_security_client = boto3.client('codeguru-security')
         sns_client = boto3.client('sns')
 
@@ -108,17 +108,16 @@ def main():
                         zip_file.write(download_response.content)
                     
                     print("Package downloaded successfully...")
+                    
                     # Perform CodeGuru Security Scans
                     try:
-                        print("Initiating CodeGuru Security scan...")
-                        
-                        print("Creating CodeGuru Security Upload URL...")
+                        print("Creating CodeGuru Security upload URL...")
                         create_url_input = {"scanName": external_package_name}
                         create_url_response = codeguru_security_client.create_upload_url(**create_url_input)
                         url = create_url_response["s3Url"]
                         artifact_id = create_url_response["codeArtifactId"]
 
-                        print("Uploading External Package Repository File...")
+                        print("Uploading external package repository file...")
 
                         upload_response = requests.put(
                             url,
@@ -127,7 +126,7 @@ def main():
                         )
 
                         if upload_response.status_code == 200:
-                            print("Performing CodeGuru Security and Quality Scans...")
+                            print("Conducting CodeGuru Security scans...")
                             
                             scan_input = {
                                 "resourceId": {
@@ -140,7 +139,7 @@ def main():
                             create_scan_response = codeguru_security_client.create_scan(**scan_input)
                             run_id = create_scan_response["runId"]
 
-                            print("Retrieving Scan Results...")
+                            print("Retrieving scan results...")
                             get_scan_input = {
                                 "scanName": external_package_name,
                                 "runId": run_id,
@@ -156,7 +155,7 @@ def main():
                             if get_scan_response["scanState"] != "Successful":
                                 raise Exception(f"CodeGuru Scan {external_package_name} failed")
                             else:
-                                print("Analyzing Security and Quality Finding Severities...")
+                                print("Analyzing Security scan finding severities...")
                                 get_findings_input = {
                                     "scanName": external_package_name,
                                     "maxResults": 20,
@@ -184,7 +183,9 @@ def main():
 
                                             # Check if the branch exists, if not, create it
                                             try:
+                                                print("HERE1")
                                                 repo = github.get_repo(f"{github_owner}/{github_repo}")
+                                                print("HERE2")
                                                 
                                                 try:
                                                     branch = repo.get_branch(branch_name)

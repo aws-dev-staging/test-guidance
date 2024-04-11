@@ -56,7 +56,11 @@ def format_private_package_response(response):
 
 def main():
     try:
-        print("Initiating Security Scan for External Package Repositories")
+        print("\nInitiating security scan for external package repositories")
+        # Instantiate boto3 clients
+        codeartifact_client = boto3.client('codeartifact')
+        codeguru_security_client = boto3.client('codeguru-security')
+        sns_client = boto3.client('sns')
 
         # Read CSV file to get external package information
         with open('external-package-request.csv', newline='') as csvfile:
@@ -80,21 +84,14 @@ def main():
 
                     # Perform CodeGuru Security Scans
                     try:
-                        print("Initiating CodeGuru Security scan...")
-
-                        # Instantiate boto3 clients
-                        codeguru_security_client = boto3.client('codeguru-security')
-                        codeartifact_client = boto3.client('codeartifact')
-                        sns_client = boto3.client('sns')
-
-                        print("Creating CodeGuru Security Upload URL...")
+                        print("Creating CodeGuru Security upload URL...")
 
                         create_url_input = {"scanName": external_package_name}
                         create_url_response = codeguru_security_client.create_upload_url(**create_url_input)
                         url = create_url_response["s3Url"]
                         artifact_id = create_url_response["codeArtifactId"]
 
-                        print("Uploading External Package Repository File...")
+                        print("Uploading external package repository file...")
 
                         upload_response = requests.put(
                             url,
@@ -102,7 +99,7 @@ def main():
                             data=open(zip_file_name, "rb"),
                         )
                             
-                        print("Performing CodeGuru Security and Quality Scans...")
+                        print("Conducting CodeGuru Security scans...")
                         
                         scan_input = {
                             "resourceId": {
@@ -115,7 +112,7 @@ def main():
                         create_scan_response = codeguru_security_client.create_scan(**scan_input)
                         run_id = create_scan_response["runId"]
 
-                        print("Retrieving Scan Results...")
+                        print("Retrieving scan results...")
                         
                         get_scan_input = {
                             "scanName": external_package_name,
@@ -133,7 +130,7 @@ def main():
                             raise Exception(f"CodeGuru Scan {external_package_name} failed")
                         else:
 
-                            print("Analyzing Security and Quality Finding Severities...")
+                            print("Analyzing security scan finding severities...")
 
                             get_findings_input = {
                                 "scanName": external_package_name,
