@@ -195,8 +195,9 @@ def main():
                                                     print(f"Branch '{branch_name}' already exists...")
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
+                                                    print("repo.master_branch = " + str(repo.master_branch))
                                                     repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
-                                                    time.sleep(3)
+                                                    time.sleep(10)
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' created successfully...")
 
