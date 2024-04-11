@@ -185,21 +185,31 @@ def main():
                                             commit_message = f"Add private package - {zip_file_name}"
 
                                             # Check if the branch exists, if not, create it
+
                                             try:
                                                 repo = github.get_repo(f"{github_owner}/{github_repo}")
                                                 print("repo = " + str(repo))
                                                 
                                                 try:
                                                     print("HERE1")
+                                                    default_branch = repo.default_branch
+                                                    print(f"Default branch: '{default_branch}'")
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' already exists...")
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
-                                                    print("repo.master_branch = " + str(repo.master_branch))
-                                                    repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=repo.master_branch)
-                                                    time.sleep(10)
-                                                    branch = repo.get_branch(branch_name)
-                                                    print(f"Branch '{branch_name}' created successfully...")
+                                                    try:
+                                                        # Create a reference to the default branch if it exists, otherwise use 'main'
+                                                        default_branch_ref = f"refs/heads/{default_branch}" if default_branch else "refs/heads/main"
+                                                        repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=default_branch_ref)
+                                                        time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
+                                                        branch = repo.get_branch(branch_name)
+                                                        if branch:
+                                                            print(f"Branch '{branch_name}' created successfully...")
+                                                        else:
+                                                            print(f"Failed to retrieve branch '{branch_name}' details after creation.")
+                                                    except Exception as e:
+                                                        print(f"Failed to create or retrieve branch '{branch_name}': {e}")
 
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
