@@ -57,9 +57,6 @@ def push_file_to_github(file_path, repo, branch, commit_message, content_base64)
         repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
         print(f"File '{file_path}' created in branch '{branch_name}'...")
 
-    except Exception as e:
-        print(f"Error pushing file to GitHub: {e}")
-
 # Method to format findings for SNS email readability
 def format_findings(findings):
     formatted_message = ""
