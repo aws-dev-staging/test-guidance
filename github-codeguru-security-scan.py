@@ -195,33 +195,36 @@ def main():
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' created successfully...")
 
-                                            # Send the request to GitHub API
-                                            response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
-                                            response_json = response.json()
-                                            print("HERE3")
-                                            
-                                            # Extracting relevant information from the JSON response
-                                            commit_message = response_json.get('commit', {}).get('message')
-                                            commit_author = response_json.get('commit', {}).get('author', {}).get('name')
-                                            commit_date = response_json.get('commit', {}).get('author', {}).get('date')
-                                            content = response_json.get('content', {})
-                                            file_name = content.get('name')
-                                            file_size = content.get('size')
-                                            file_download_url = content.get('download_url')
-                                            print("HERE4")
+                                                # Send the request to GitHub API
+                                                response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
+                                                response_json = response.json()
+                                                print("HERE3")
+                                                
+                                                # Extracting relevant information from the JSON response
+                                                commit_message = response_json.get('commit', {}).get('message')
+                                                commit_author = response_json.get('commit', {}).get('author', {}).get('name')
+                                                commit_date = response_json.get('commit', {}).get('author', {}).get('date')
+                                                content = response_json.get('content', {})
+                                                file_name = content.get('name')
+                                                file_size = content.get('size')
+                                                file_download_url = content.get('download_url')
+                                                print("HERE4")
 
-                                            # Constructing a meaningful message
-                                            message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
+                                                # Constructing a meaningful message
+                                                message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
 
-                                            sns_response = sns_client.publish(
-                                                TopicArn=sns_topic_arn,
-                                                Subject=f"{external_package_name} Package Approved",
-                                                Message=message
-                                            )
-                                            print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                sns_response = sns_client.publish(
+                                                    TopicArn=sns_topic_arn,
+                                                    Subject=f"{external_package_name} Package Approved",
+                                                    Message=message
+                                                )
+                                                print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+
+                                            except Exception as error:
+                                                print(f"Failed to retrieve branch details from GitHub: {error}")
 
                                         except Exception as error:
-                                            print(f"Failed to retrieve branch details from GitHub: {error}")
+                                            print(f"File error: {error}")
 
                                     else:
                                         formatted_message = format_findings(get_findings_response["findings"])
