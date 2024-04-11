@@ -188,21 +188,22 @@ def main():
 
                                             try:
                                                 repo = github.get_repo(f"{github_owner}/{github_repo}")
-                                                print("repo = " + str(repo))
                                                 
                                                 try:
-                                                    print("HERE1")
                                                     default_branch = repo.default_branch
                                                     print(f"Default branch: '{default_branch}'")
                                                     branch = repo.get_branch(branch_name)
                                                     print(f"Branch '{branch_name}' already exists...")
+
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
                                                     try:
                                                         # Create a reference to the default branch if it exists, otherwise use 'main'
                                                         default_branch_ref = f"refs/heads/{default_branch}" if default_branch else "refs/heads/main"
-                                                        repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=default_branch_ref)
+                                                        print("default_branch_ref = " + str(default_branch_ref))
+                                                        repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=default_branch_ref.commit.sha)
                                                         time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
+                                                        
                                                         branch = repo.get_branch(branch_name)
                                                         if branch:
                                                             print(f"Branch '{branch_name}' created successfully...")
