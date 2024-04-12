@@ -235,7 +235,6 @@ def main():
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
                                                 print("response = " + str(response))
-                                                response_json = response.json()
                                                 
                                                 # Extracting relevant information from the JSON response
                                                 if response:
