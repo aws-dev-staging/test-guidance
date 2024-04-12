@@ -56,22 +56,16 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
             print("no existing_file_sha")
             response = repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
             print(f"File '{file_path}' created in branch '{branch_name}'...")
-        
-        # Extracting relevant information from the response
-        commit_message = response.commit.message
-        commit_author = response.commit.author.name
-        commit_date = response.commit.author.date
-        file_name = response.content.name
-        file_size = response.content.size
-        file_download_url = response.content.download_url
 
+        print("push_file_to_github response = " + str(response))
+        
+        # Return relevant information about the commit
         return {
             'commit_message': commit_message,
-            'commit_author': commit_author,
-            'commit_date': commit_date,
-            'file_name': file_name,
-            'file_size': file_size,
-            'file_download_url': file_download_url
+            'branch_name': branch_name,
+            'file_path': file_path,
+            'file_size': len(content_base64),
+            'file_download_url': f"https://github.com/{repo.full_name}/blob/{branch_name}/{file_path}"
         }
 
     except Exception as e:
