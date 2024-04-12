@@ -49,16 +49,34 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
         if existing_file_sha:
             # File already exists, update its content
             print("existing_file_sha")
-            repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
+            response = repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
             print(f"File '{file_path}' updated in branch '{branch_name}'...")
         else:
             # File does not exist, create a new one
             print("no existing_file_sha")
-            repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
+            response = repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
             print(f"File '{file_path}' created in branch '{branch_name}'...")
+        
+        # Extracting relevant information from the response
+        commit_message = response.commit.message
+        commit_author = response.commit.author.name
+        commit_date = response.commit.author.date
+        file_name = response.content.name
+        file_size = response.content.size
+        file_download_url = response.content.download_url
+
+        return {
+            'commit_message': commit_message,
+            'commit_author': commit_author,
+            'commit_date': commit_date,
+            'file_name': file_name,
+            'file_size': file_size,
+            'file_download_url': file_download_url
+        }
 
     except Exception as e:
         print(f"Error pushing file to GitHub: {e}")
+        return None
 
 # Method to format findings for SNS email readability
 def format_findings(findings):
@@ -216,31 +234,31 @@ def main():
 
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
-                                                print("HERE2")
+                                                print("response = " + str(response))
                                                 response_json = response.json()
                                                 
                                                 # Extracting relevant information from the JSON response
-                                                commit_message = response_json.get('commit', {}).get('message')
-                                                commit_author = response_json.get('commit', {}).get('author', {}).get('name')
-                                                commit_date = response_json.get('commit', {}).get('author', {}).get('date')
-                                                content = response_json.get('content', {})
-                                                file_name = content.get('name')
-                                                file_size = content.get('size')
-                                                file_download_url = content.get('download_url')
-                                                print("HERE3")
+                                                if response:
+                                                    commit_message = response['commit_message']
+                                                    commit_author = response['commit_author']
+                                                    commit_date = response['commit_date']
+                                                    file_name = response['file_name']
+                                                    file_size = response['file_size']
+                                                    file_download_url = response['file_download_url']
+                                                    
+                                                    message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
 
-                                                # Constructing a meaningful message
-                                                message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
-
-                                                sns_response = sns_client.publish(
-                                                    TopicArn=sns_topic_arn,
-                                                    Subject=f"{external_package_name} Package Approved",
-                                                    Message=message
-                                                )
-                                                print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                    sns_response = sns_client.publish(
+                                                        TopicArn=sns_topic_arn,
+                                                        Subject=f"{external_package_name} Package Approved",
+                                                        Message=message
+                                                    )
+                                                    print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                else:
+                                                    print("Failed to push file to GitHub. No response received.")
 
                                             except Exception as error:
-                                                print(f"Failed to notify requestor of GitHub branch details: {error}")
+                                                print(f"GitHub repository error: {error}")
 
                                         except Exception as error:
                                             print(f"File error: {error}")
