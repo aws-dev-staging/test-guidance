@@ -216,8 +216,8 @@ def main():
 
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
-                                                response_json = response.json()
                                                 print("HERE2")
+                                                response_json = response.json()
                                                 
                                                 # Extracting relevant information from the JSON response
                                                 commit_message = response_json.get('commit', {}).get('message')
@@ -240,7 +240,7 @@ def main():
                                                 print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
 
                                             except Exception as error:
-                                                print(f"Failed to retrieve branch details from GitHub: {error}")
+                                                print(f"Failed to notify requestor of GitHub branch details: {error}")
 
                                         except Exception as error:
                                             print(f"File error: {error}")
