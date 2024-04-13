@@ -48,16 +48,12 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
         # Push the file to the repository
         if existing_file_sha:
             # File already exists, update its content
-            print("existing_file_sha")
             response = repo.update_file(file_path, commit_message, encoded_content, existing_file_sha, branch=branch_name)
             print(f"File '{file_path}' updated in branch '{branch_name}'...")
         else:
             # File does not exist, create a new one
-            print("no existing_file_sha")
             response = repo.create_file(file_path, commit_message, encoded_content, branch=branch_name)
             print(f"File '{file_path}' created in branch '{branch_name}'...")
-
-        print("push_file_to_github response = " + str(response))
         
         # Return relevant information about the commit
         return {
@@ -228,18 +224,16 @@ def main():
 
                                                 # Send the request to GitHub API
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
-                                                print("response = " + str(response))
                                                 
                                                 # Extracting relevant information from the JSON response
                                                 if response:
                                                     commit_message = response['commit_message']
-                                                    commit_author = response['commit_author']
                                                     commit_date = response['commit_date']
                                                     file_name = response['file_name']
                                                     file_size = response['file_size']
                                                     file_download_url = response['file_download_url']
                                                     
-                                                    message = f"New GitHub private package commit by {commit_author} on {commit_date}: {commit_message}. Uploaded file: {file_name}, Size: {file_size} bytes. Download URL: {file_download_url}"
+                                                    message = f"New GitHub private package commit by {github_username} on {commit_date}: {commit_message}. \nUploaded file: {file_name} \nSize: {file_size} bytes \nDownload URL: {file_download_url}"
 
                                                     sns_response = sns_client.publish(
                                                         TopicArn=sns_topic_arn,
