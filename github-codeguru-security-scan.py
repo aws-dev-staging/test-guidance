@@ -233,7 +233,7 @@ def main():
                                                     message = f"""
                                                         New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.'
                                                         Commit message: {commit_message}
-                                                        Uploaded file: {file_name}
+                                                        Uploaded file: {file_path}
                                                         Size: {file_size} bytes
                                                         Download URL: {file_download_url}
                                                     """
