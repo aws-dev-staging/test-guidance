@@ -58,8 +58,6 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
         # Return relevant information about the commit
         return {
             'commit_message': commit_message,
-            'branch_name': branch_name,
-            'file_path': file_path,
             'file_size': len(content_base64),
             'file_download_url': f"https://github.com/{repo.full_name}/blob/{branch_name}/{file_path}"
         }
@@ -226,14 +224,19 @@ def main():
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
                                                 
                                                 # Extracting relevant information from the JSON response
+
                                                 if response:
                                                     commit_message = response['commit_message']
-                                                    commit_date = response['commit_date']
-                                                    file_name = response['file_name']
                                                     file_size = response['file_size']
                                                     file_download_url = response['file_download_url']
                                                     
-                                                    message = f"New GitHub private package commit by {github_username} on {commit_date}: {commit_message}. \nUploaded file: {file_name} \nSize: {file_size} bytes \nDownload URL: {file_download_url}"
+                                                    message = f"""
+                                                        New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.'
+                                                        Commit message: {commit_message}
+                                                        Uploaded file: {file_name}
+                                                        Size: {file_size} bytes
+                                                        Download URL: {file_download_url}
+                                                    """
 
                                                     sns_response = sns_client.publish(
                                                         TopicArn=sns_topic_arn,
