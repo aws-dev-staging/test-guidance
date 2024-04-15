@@ -268,7 +268,8 @@ AWS CloudFormation prepopulates stack parameters with the default values provide
 Before deploying the solution, you are required to specify valid name, value, and resource ID environment variables, which will be used to set the corresponding CloudFormation parameters:
 
 ```sh
-# Provide your own parameter values for CloudFormation stack name, CodePipeline pipeline name, and SNS email
+# Provide your own parameter values for AWS region, CloudFormation stack name, CodePipeline pipeline name, and SNS email
+export AWS_REGION=<YOUR-STACK-REGION>
 export STACK_NAME=<YOUR-STACK-NAME>
 export CODEPIPELINE_NAME=<YOUR-CODEPIPELINE-NAME>
 export SNS_EMAIL=<YOUR-EMAIL>
@@ -304,11 +305,12 @@ source ./create-codeartifact-stack.sh
 The preceding ```source ./create-codeartifact-stack.sh``` shell command runs the following AWS CLI commands to deploy the solution stack:
 
 ```sh
-export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-token --secret-string $PRIVATE_GITHUB_PAT --query Name --output text)
-export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export S3_ARTIFACTS_BUCKET_NAME=${STACK_NAME}-${ACCOUNT_ID}-codeartifact
+export UNIQUE_IDENTIFIER=$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-' | cut -c 1-5)
+export PRIVATE_GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-$UNIQUE_IDENTIFIER-git-pat --secret-string $PRIVATE_GITHUB_PAT --region ${AWS_REGION} --query Name --output text)
+export ACCOUNT_ID=$(aws sts get-caller-identity --region ${AWS_REGION} --query Account --output text)
+export S3_ARTIFACTS_BUCKET_NAME=${STACK_NAME}-${UNIQUE_IDENTIFIER}-codeartifact
 
-aws s3 mb s3://${S3_ARTIFACTS_BUCKET_NAME} --region us-east-1
+aws s3 mb s3://${S3_ARTIFACTS_BUCKET_NAME} --region ${AWS_REGION}
 
 aws cloudformation create-stack \
 --stack-name ${STACK_NAME} \
@@ -320,13 +322,15 @@ ParameterKey=SNSEmail,ParameterValue=${SNS_EMAIL} \
 ParameterKey=PrivateGitHubBranch,ParameterValue=${PRIVATE_GITHUB_BRANCH} \
 ParameterKey=PrivateGitHubOwner,ParameterValue=${PRIVATE_GITHUB_OWNER} \
 ParameterKey=PrivateGitHubRepo,ParameterValue=${PRIVATE_GITHUB_REPO} \
-ParameterKey=PrivateGitHubToken,ParameterValue=${GITHUB_TOKEN_SECRET_NAME} \
+ParameterKey=PrivateGitHubToken,ParameterValue=${PRIVATE_GITHUB_TOKEN_SECRET_NAME} \
 ParameterKey=CodeServicesVpc,ParameterValue=${CODESERVICES_VPC_ID} \
 ParameterKey=CodeServicesSubnet,ParameterValue=${CODESERVICES_SUBNET_ID1}\\,${CODESERVICES_SUBNET_ID2} \
---capabilities CAPABILITY_IAM
+--capabilities CAPABILITY_IAM \
+--region ${AWS_REGION}
 
-aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus"
-aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
+aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${AWS_REGION} --query "Stacks[0].StackStatus"
+aws cloudformation wait stack-create-complete --stack-name $STACK_NAME --region ${AWS_REGION}
+aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${AWS_REGION} --query "Stacks[0].StackStatus"
 ```
 
 ## Deployment Validation
