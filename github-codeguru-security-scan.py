@@ -103,6 +103,7 @@ def main():
         with open('external-package-request.csv', newline='') as csvfile:            
             package_reader = csv.reader(csvfile)
 
+            # Iterate through external packages
             for row in package_reader:
                 try:
                     external_package_name, external_package_url = row
@@ -170,7 +171,6 @@ def main():
                                 get_findings_response = codeguru_security_client.get_findings(**get_findings_input)
                                 
                                 if "findings" in get_findings_response:
-                                    print(f"get_findings_response = {str(get_findings_response)}")
                                     # Check if any finding severity is medium or high
                                     has_medium_or_high_severity = any(finding["severity"] in ["Medium", "High"] for finding in get_findings_response["findings"])
 
@@ -249,6 +249,8 @@ def main():
                                             Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
+                                else:
+                                    print("No findings returned.")
                         else:
                             print("Failed to upload external package repository file to Amazon CodeGuru Security.")    
 
