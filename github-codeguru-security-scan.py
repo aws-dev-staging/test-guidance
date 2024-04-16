@@ -10,7 +10,7 @@ from dateutil import tz
 from datetime import datetime
 from github import Github
 
-# Environment Variables
+# Environment variables
 region_name = os.environ.get("AWS_REGION")
 github_repo = os.environ.get("PrivateGitHubRepo")
 github_owner = os.environ.get("PrivateGitHubOwner")
@@ -67,6 +67,7 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
 # Method to format findings for SNS email readability
 def format_findings(findings):
     formatted_message = ""
+
     for index, finding in enumerate(findings, start=1):
         formatted_message += f"\n{index}. Vulnerability: {finding['title']}\n"
         formatted_message += f"   - Description: {finding['description']}\n"
@@ -75,6 +76,7 @@ def format_findings(findings):
         formatted_message += f"   - Path: {finding['vulnerability']['filePath']['path']}\n"
         
         reference_urls = finding.get('referenceUrls', [])
+
         if reference_urls:
             formatted_reference_urls = ', '.join(reference_urls)
         else:
@@ -91,17 +93,17 @@ def sanitize_package_name(name):
 def main():
     try:
         print("\nInitiating security scans for external package repositories")
+        
         # Instantiate boto3 clients
         codeartifact_client = boto3.client('codeartifact')
         codeguru_security_client = boto3.client('codeguru-security')
         sns_client = boto3.client('sns')
 
         # Read CSV file to get external package information
-        with open('external-package-request.csv', newline='') as csvfile:
-            
+        with open('external-package-request.csv', newline='') as csvfile:            
             package_reader = csv.reader(csvfile)
-            for row in package_reader:
 
+            for row in package_reader:
                 try:
                     external_package_name, external_package_url = row
                     external_package_name = sanitize_package_name(external_package_name)
@@ -112,8 +114,7 @@ def main():
                     download_response = requests.get(external_package_url)
                 
                     with open(zip_file_name, "wb") as zip_file:
-                        zip_file.write(download_response.content)
-                    
+                        zip_file.write(download_response.content)                    
                     print("Package downloaded successfully...")
                     
                     # Perform CodeGuru Security Scans
@@ -125,7 +126,6 @@ def main():
                         artifact_id = create_url_response["codeArtifactId"]
 
                         print("Uploading external package repository file...")
-
                         upload_response = requests.put(
                             url,
                             headers=create_url_response["requestHeaders"],
@@ -133,8 +133,7 @@ def main():
                         )
 
                         if upload_response.status_code == 200:
-                            print("Conducting CodeGuru Security scans...")
-                            
+                            print("Conducting CodeGuru Security scans...")                            
                             scan_input = {
                                 "resourceId": {
                                     "codeArtifactId": artifact_id,
@@ -171,12 +170,12 @@ def main():
                                 get_findings_response = codeguru_security_client.get_findings(**get_findings_input)
                                 
                                 if "findings" in get_findings_response:
+                                    print(f"get_findings_response = {str(get_findings_response)}")
                                     # Check if any finding severity is medium or high
                                     has_medium_or_high_severity = any(finding["severity"] in ["Medium", "High"] for finding in get_findings_response["findings"])
 
                                     if not has_medium_or_high_severity:
-                                        print("No medium or high severities found. Pushing to GitHub repository...")
-
+                                        print("No medium or high severities found. Pushing to private GitHub package repository...")
                                         try:
                                             # Prepare content for GitHub commit
                                             with open(zip_file_name, "rb") as file:
@@ -188,27 +187,24 @@ def main():
                                             file_path = f"packages/{zip_file_name}"
                                             commit_message = f"Add private package - {zip_file_name}"
 
-                                            # Check if the branch exists, if not, create it
-
+                                            # Check if the branch exists. If not, create it
                                             try:
                                                 repo = github.get_repo(f"{github_owner}/{github_repo}")
                                                 
                                                 try:
                                                     default_branch = repo.default_branch
-                                                    branch = repo.get_branch(branch_name)
-
+                                                    branch = repo.get_branch(branch_name)                                                
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
+
                                                     try:
                                                         # Create a reference to the default branch if it exists, otherwise use 'main'
                                                         default_branch_ref = default_branch if default_branch else "main"
-                                                        print("default_branch_ref = " + str(default_branch_ref))
                                                         source_branch = repo.get_branch(default_branch_ref)
-                                                        print("source_branch = " + str(source_branch))
                                                         repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=source_branch.commit.sha)
-                                                        time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
-                                                        
+                                                        # time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
                                                         branch = repo.get_branch(branch_name)
+                                                    
                                                     except Exception as e:
                                                         print(f"Failed to create or retrieve branch '{branch_name}': {e}")
 
@@ -232,7 +228,8 @@ def main():
                                                         Subject=f"{external_package_name} Package Approved",
                                                         Message=message
                                                     )
-                                                    print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")
+                                                    print("New private package version asset created successfully. An email has been sent to the requestor with additional details.")                                                
+                                                
                                                 else:
                                                     print("Failed to push file to GitHub. No response received.")
 
@@ -252,9 +249,8 @@ def main():
                                             Message=f"Security findings report for external package repository: {external_package_name}\n\n{formatted_message}"
                                         )
                                         print("Medium or high severities found. An email has been sent to the requestor with additional details.")
-                                
-                                else:
-                                    print("No findings found.")
+                        else:
+                            print("Failed to upload external package repository file to Amazon CodeGuru Security.")    
 
                     except Exception as error:
                         print(f"Issue performing Amazon CodeGuru Security scan: {error}")
