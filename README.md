@@ -153,9 +153,19 @@ Please note that the actual cost will depend on factors such as the frequency of
 
 ## Prerequisites
 
+### Enable Amazon CodeGuru Security
+
+In June 2023, AWS announced the preview release of Amazon CodeGuru Security, a static application security testing (SAST) tool that uses machine learning to identify code vulnerabilities. 
+
+This solution utilizes Amazon CodeGuru Security scans on external packages to provide guidance for addressing vulnerabilities and offering in-context code patches for specific vulnerability categories, simplifying the remediation process.
+
+Before deploying the solution, ensure that Amazon CodeGuru Security is enabled for the region where you intend to deploy the solution stack.
+
+Amazon CodeGuru Security is accessible through the AWS Management Console, the [AWS Command Line Interface](https://aws.amazon.com/cli/) (CLI), and [AWS Software Development Kit](https://aws.amazon.com/developer/tools/) (SDK), along with several integrations. For additional information, refer to [Getting started with CodeGuru Security](https://docs.aws.amazon.com/codeguru/latest/security-ug/getting-started-with-codeguru-security.html).
+
 ### Operating System
 
-You must have [AWS Command Line Interface](https://aws.amazon.com/cli/) (CLI) installed. For installation instructions, refer to [Installing, updating, and uninstalling the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
+You must have AWS CLI installed. For installation instructions, refer to [Installing, updating, and uninstalling the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
 
 ### Multi-Account Configuration
 

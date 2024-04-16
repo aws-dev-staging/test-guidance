@@ -195,9 +195,7 @@ def main():
                                                 
                                                 try:
                                                     default_branch = repo.default_branch
-                                                    print(f"Default branch: '{default_branch}'")
                                                     branch = repo.get_branch(branch_name)
-                                                    print(f"Branch '{branch_name}' already exists...")
 
                                                 except Exception as e:
                                                     print(f"Creating new branch: '{branch_name}'...")
@@ -211,10 +209,6 @@ def main():
                                                         time.sleep(5)  # Add a delay of 5 seconds to allow time for the branch creation
                                                         
                                                         branch = repo.get_branch(branch_name)
-                                                        if branch:
-                                                            print(f"Branch '{branch_name}' created successfully...")
-                                                        else:
-                                                            print(f"Failed to retrieve branch '{branch_name}' details after creation.")
                                                     except Exception as e:
                                                         print(f"Failed to create or retrieve branch '{branch_name}': {e}")
 
@@ -222,18 +216,17 @@ def main():
                                                 response = push_file_to_github(file_path, repo, branch_name, commit_message, content_base64)
                                                 
                                                 # Extracting relevant information from the JSON response
-
                                                 if response:
                                                     commit_message = response['commit_message']
                                                     file_size = response['file_size']
                                                     file_download_url = response['file_download_url']
                                                     
                                                     message = f"""
-                                                        New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.'
-                                                        Commit message: {commit_message}
-                                                        Uploaded file: {file_path}
-                                                        Size: {file_size} bytes
-                                                        Download URL: {file_download_url}
+                                                    New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.'
+                                                    Commit message: {commit_message}
+                                                    Uploaded file: {file_path}
+                                                    Size: {file_size} bytes
+                                                    Download URL: {file_download_url}
                                                     """
 
                                                     sns_response = sns_client.publish(
