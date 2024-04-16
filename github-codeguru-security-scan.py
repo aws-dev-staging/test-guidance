@@ -37,10 +37,8 @@ def push_file_to_github(file_path, repo, branch_name, commit_message, content_ba
         try:
             file_content = repo.get_contents(file_path, ref=branch_name)
             existing_file_sha = file_content.sha
-            print(f"File '{file_path}' already exists in branch '{branch_name}'...")
         except Exception as e:
             existing_file_sha = None
-            print(f"File '{file_path}' does not exist in branch '{branch_name}'...")
 
         # Encode content to base64
         encoded_content = base64.b64encode(content_base64.encode('utf-8')).decode('utf-8')
