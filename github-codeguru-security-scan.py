@@ -217,11 +217,11 @@ def main():
                                                     file_size = response['file_size']
                                                     file_download_url = response['file_download_url']
                                                     
-                                                    message = f"""New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.' \
-                                                    Commit message: {commit_message} \
-                                                    Uploaded file: {file_path} \
-                                                    Size: {file_size} bytes \
-                                                    Download URL: {file_download_url}"""
+                                                    message = f"""New GitHub private package '{external_package_name}' pushed to branch '{branch_name}.'\n \
+                                                    Commit message: {commit_message}\n \
+                                                    Uploaded file: {file_path}\n \
+                                                    Size: {file_size} bytes\n \
+                                                    Download URL: {file_download_url}\n"""
 
                                                     sns_response = sns_client.publish(
                                                         TopicArn=sns_topic_arn,
